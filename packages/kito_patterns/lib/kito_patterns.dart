@@ -23,9 +23,10 @@
 ///
 /// ## Atomic Primitives:
 ///
-/// - **Motion**: Elastic, bounce, shake, pulse, flash, swing, jello, heartbeat
+/// - **Motion**: Elastic, bounce, shake, pulse, flash, swing, jello, heartbeat, tada, wobble, rubber band, head shake
 /// - **Enter/Exit**: Fade, slide, scale, rotate, blur, zoom, flip
 /// - **Timing**: Chain, parallel, delay, repeat, yoyo, spring, momentum
+/// - **Combos**: Dramatic entrance/exit, pop in/out, grow/shrink, rotate in/out, bouncy attention, wiggle attention
 ///
 /// Example:
 /// ```dart
@@ -84,3 +85,4 @@ export 'src/helpers/stagger.dart';
 export 'src/primitives/motion_primitives.dart';
 export 'src/primitives/enter_exit_primitives.dart';
 export 'src/primitives/timing_primitives.dart';
+export 'src/primitives/combo_presets.dart';
