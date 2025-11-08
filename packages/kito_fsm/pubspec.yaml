@@ -1,0 +1,19 @@
+name: kito_fsm
+description: Type-safe finite state machine library for Kito with reactive primitives
+version: 0.1.0
+repository: https://github.com/darmie/kito
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # Core Kito for reactive primitives
+  kito:
+    path: ../kito
+
+  meta: ^1.9.0
+
+dev_dependencies:
+  test: ^1.24.0
+  mocktail: ^1.0.0
+  lints: ^3.0.0
