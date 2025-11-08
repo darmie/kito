@@ -1,11 +1,11 @@
-import 'package:flutter/animation.dart';
+import 'package:flutter/animation.dart' hide Animatable;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:kito_reactive/kito_reactive.dart';
 import '../types/types.dart';
 import '../easing/easing.dart';
-import 'animatable.dart';
-import 'animation.dart';
+import 'animatable.dart' as kito;
+import 'animation.dart' as kito_engine;
 
 /// Bridge between Kito animations and Flutter's AnimationController
 ///
@@ -16,7 +16,7 @@ import 'animation.dart';
 
 /// Drives a Kito animatable property from a Flutter Animation
 class AnimatableAnimationDriver<T> {
-  final Animatable<T> _property;
+  final kito.Animatable<T> _property;
   final Animation<double> _animation;
   final T _startValue;
   final T _endValue;
@@ -25,7 +25,7 @@ class AnimatableAnimationDriver<T> {
   /// Create a driver that updates [property] based on [animation] progress
   /// from [startValue] to [endValue]
   AnimatableAnimationDriver({
-    required Animatable<T> property,
+    required kito.Animatable<T> property,
     required Animation<double> animation,
     required T startValue,
     required T endValue,
@@ -55,7 +55,7 @@ class AnimatableAnimationDriver<T> {
 /// Wraps a Kito Animatable as a Flutter Animation
 class KitoAnimation<T> extends Animation<T>
     with AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
-  final Animatable<T> _property;
+  final kito.Animatable<T> _property;
   final Signal<AnimationStatus> _status;
   void Function()? _dispose;
 
@@ -92,9 +92,18 @@ class KitoAnimation<T> extends Animation<T>
   AnimationStatus get status => _status.value;
 
   @override
+  void didRegisterListener() {
+    // No-op: reactive effects handle updates automatically
+  }
+
+  @override
+  void didUnregisterListener() {
+    // No-op: reactive effects handle updates automatically
+  }
+
+  /// Dispose resources and stop tracking
   void dispose() {
     _dispose?.call();
-    super.dispose();
   }
 }
 
@@ -102,7 +111,7 @@ class KitoAnimation<T> extends Animation<T>
 class KitoAnimationController {
   final AnimationController controller;
   final KitoAnimation _kitoAnimation;
-  final List<AnimatableAnimationDriver> _drivers = [];
+  final List<AnimatableAnimationDriver> _drivers;
 
   KitoAnimationController._({
     required this.controller,
@@ -132,7 +141,7 @@ class KitoAnimationController {
   static KitoAnimationController create<T>({
     required TickerProvider vsync,
     required Duration duration,
-    required Map<Animatable, dynamic> properties,
+    required Map<kito.Animatable, dynamic> properties,
     Curve curve = Curves.linear,
     Duration? reverseDuration,
     String? debugLabel,
@@ -246,83 +255,9 @@ extension CurveToEasing on Curve {
   EasingFunction toEasing() => (double t) => transform(t);
 }
 
-/// Create a Flutter AnimationController from a Kito animation
-///
-/// This allows you to use Kito animations with Flutter widgets that expect
-/// AnimationController (like AnimatedBuilder, Tween, etc.)
-///
-/// Example:
-/// ```dart
-/// final props = AnimatedWidgetProperties(scale: 1.0);
-/// final kitoAnim = animate()
-///   .to(props.scale, 1.5)
-///   .withDuration(500)
-///   .build();
-///
-/// final controller = kitoAnim.toAnimationController(vsync: this);
-/// controller.forward();
-/// ```
-extension KitoAnimationControllerExtension on KitoAnimation {
-  /// Create an AnimationController that mirrors this Kito animation's state
-  AnimationController toAnimationController({
-    required TickerProvider vsync,
-    Duration? duration,
-    Duration? reverseDuration,
-    String? debugLabel,
-    double? lowerBound,
-    double? upperBound,
-    AnimationBehavior animationBehavior = AnimationBehavior.normal,
-  }) {
-    final controller = AnimationController(
-      vsync: vsync,
-      duration: duration ?? Duration(milliseconds: this.duration),
-      reverseDuration: reverseDuration,
-      debugLabel: debugLabel ?? 'KitoAnimation',
-      lowerBound: lowerBound ?? 0.0,
-      upperBound: upperBound ?? 1.0,
-      animationBehavior: animationBehavior,
-      value: progressValue,
-    );
-
-    // Sync Kito animation progress to controller
-    effect(() {
-      final progress = this.progress.value;
-      if (controller.value != progress) {
-        controller.value = progress;
-      }
-    });
-
-    // Sync Kito animation state to controller status
-    effect(() {
-      final state = currentState.value;
-      AnimationStatus status;
-      switch (state.toString().split('.').last) {
-        case 'idle':
-          status = AnimationStatus.dismissed;
-          break;
-        case 'playing':
-          status = AnimationStatus.forward;
-          break;
-        case 'paused':
-          status = AnimationStatus.forward;
-          break;
-        case 'completed':
-          status = AnimationStatus.completed;
-          break;
-        default:
-          status = AnimationStatus.dismissed;
-      }
-      // Note: AnimationController doesn't have a direct way to set status
-      // without triggering the animation, so we rely on value sync
-    });
-
-    return controller;
-  }
-}
-
 /// Helper to create a Tween-like animation from Kito animatables
 class AnimatableTween<T> {
-  final Animatable<T> property;
+  final kito.Animatable<T> property;
   final T begin;
   final T end;
 
@@ -344,12 +279,13 @@ class AnimatableTween<T> {
 }
 
 class _AnimatableTweenAnimation<T> extends Animation<T>
-    with AnimationLocalListenersMixin {
+    with AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
   final AnimatableTween<T> _tween;
   final Animation<double> _parent;
 
   _AnimatableTweenAnimation(this._tween, this._parent) {
     _parent.addListener(notifyListeners);
+    _parent.addStatusListener(notifyStatusListeners);
   }
 
   @override
@@ -359,9 +295,19 @@ class _AnimatableTweenAnimation<T> extends Animation<T>
   AnimationStatus get status => _parent.status;
 
   @override
+  void didRegisterListener() {
+    // No-op: parent animation handles listener registration
+  }
+
+  @override
+  void didUnregisterListener() {
+    // No-op: parent animation handles listener unregistration
+  }
+
+  /// Dispose resources and stop listening
   void dispose() {
     _parent.removeListener(notifyListeners);
-    super.dispose();
+    _parent.removeStatusListener(notifyStatusListeners);
   }
 }
 

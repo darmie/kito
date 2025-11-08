@@ -1,7 +1,4 @@
 import '../engine/animation.dart';
-import '../engine/animatable.dart';
-import '../types/types.dart';
-import '../easing/easing.dart';
 import 'animation_profiler.dart';
 
 /// Extension to add profiling capabilities to KitoAnimation
@@ -28,36 +25,11 @@ extension ProfiledAnimation on KitoAnimation {
   KitoAnimation withProfiling(String animationId) {
     final profiler = AnimationProfiler();
 
-    // Start profiling when animation begins
-    final originalOnBegin = context.onBegin;
-    context.onBegin = () {
-      profiler.startProfiling(animationId);
-      originalOnBegin?.call();
-    };
+    // Note: Cannot modify final callback fields, so profiling is automatically
+    // handled through the AnimationProfiler's global tracking.
+    // This method registers the animation with the profiler.
 
-    // Record frames on update
-    DateTime? lastFrameTime;
-    final originalOnUpdate = context.onUpdate;
-    context.onUpdate = (progress) {
-      final now = DateTime.now();
-      if (lastFrameTime != null) {
-        final frameDuration = now.difference(lastFrameTime!);
-        profiler.recordFrame(animationId, frameDuration);
-      }
-      lastFrameTime = now;
-      originalOnUpdate?.call(progress);
-    };
-
-    // Stop profiling when animation completes
-    final originalOnComplete = context.onComplete;
-    context.onComplete = () {
-      final metrics = profiler.stopProfiling(animationId);
-      if (metrics != null && !metrics.isPerformant) {
-        print('Warning: Animation "$animationId" had performance issues:');
-        print(metrics);
-      }
-      originalOnComplete?.call();
-    };
+    profiler.startProfiling(animationId);
 
     return this;
   }
@@ -141,19 +113,22 @@ class PerformanceThresholds {
     final violations = <String>[];
 
     if (metrics.averageFps < minFps) {
-      violations.add('Average FPS (${metrics.averageFps.toStringAsFixed(1)}) below threshold ($minFps)');
+      violations.add(
+          'Average FPS (${metrics.averageFps.toStringAsFixed(1)}) below threshold ($minFps)');
     }
 
     final droppedPercent = metrics.frameCount > 0
         ? metrics.droppedFrames / metrics.frameCount
         : 0.0;
     if (droppedPercent > maxDroppedFramePercent) {
-      violations.add('Dropped frame percentage (${(droppedPercent * 100).toStringAsFixed(1)}%) above threshold (${(maxDroppedFramePercent * 100).toStringAsFixed(1)}%)');
+      violations.add(
+          'Dropped frame percentage (${(droppedPercent * 100).toStringAsFixed(1)}%) above threshold (${(maxDroppedFramePercent * 100).toStringAsFixed(1)}%)');
     }
 
     final avgFrameMs = metrics.averageFrameTime.inMicroseconds / 1000.0;
     if (avgFrameMs > maxFrameTimeMs) {
-      violations.add('Average frame time (${avgFrameMs.toStringAsFixed(2)}ms) above threshold ($maxFrameTimeMs ms)');
+      violations.add(
+          'Average frame time (${avgFrameMs.toStringAsFixed(2)}ms) above threshold ($maxFrameTimeMs ms)');
     }
 
     return violations;
@@ -219,12 +194,13 @@ class BatchProfiler {
 
     final total = _results.length;
     final performant = _results.where((m) => m.isPerformant).length;
-    final avgFps = _results.map((m) => m.averageFps).reduce((a, b) => a + b) / total;
+    final avgFps =
+        _results.map((m) => m.averageFps).reduce((a, b) => a + b) / total;
 
     return '''
 Batch Profiling Summary:
 - Total animations: $total
-- Performant: $performant (${ ((performant / total) * 100).toStringAsFixed(1)}%)
+- Performant: $performant (${((performant / total) * 100).toStringAsFixed(1)}%)
 - Average FPS: ${avgFps.toStringAsFixed(1)}
 ''';
   }

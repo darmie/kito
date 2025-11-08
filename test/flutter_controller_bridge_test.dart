@@ -1,6 +1,8 @@
 import 'package:flutter/animation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kito/kito.dart';
+import 'package:kito/src/engine/flutter_controller_bridge.dart' as bridge;
 
 void main() {
   group('AnimatableAnimationDriver', () {
@@ -11,7 +13,7 @@ void main() {
       );
 
       final property = animatableDouble(0.0);
-      final driver = AnimatableAnimationDriver(
+      final driver = bridge.AnimatableAnimationDriver(
         property: property,
         animation: controller,
         startValue: 0.0,
@@ -42,7 +44,7 @@ void main() {
       );
 
       final property = animatableDouble(0.0);
-      final driver = AnimatableAnimationDriver(
+      final driver = bridge.AnimatableAnimationDriver(
         property: property,
         animation: curved,
         startValue: 0.0,
@@ -64,7 +66,7 @@ void main() {
       );
 
       final property = animatableColor(const Color(0xFF000000));
-      final driver = AnimatableAnimationDriver(
+      final driver = bridge.AnimatableAnimationDriver(
         property: property,
         animation: controller,
         startValue: const Color(0xFF000000),
@@ -88,7 +90,7 @@ void main() {
       );
 
       final property = animatableDouble(0.0);
-      final driver = AnimatableAnimationDriver(
+      final driver = bridge.AnimatableAnimationDriver(
         property: property,
         animation: controller,
         startValue: 0.0,
@@ -111,7 +113,7 @@ void main() {
   group('KitoAnimation (Flutter wrapper)', () {
     test('wraps animatable as Flutter Animation', () {
       final property = animatableDouble(42.0);
-      final wrapper = KitoAnimation(property);
+      final wrapper = bridge.KitoAnimation(property);
 
       expect(wrapper.value, 42.0);
 
@@ -123,7 +125,7 @@ void main() {
 
     test('notifies listeners on value change', () {
       final property = animatableDouble(0.0);
-      final wrapper = KitoAnimation(property);
+      final wrapper = bridge.KitoAnimation(property);
 
       var notifyCount = 0;
       wrapper.addListener(() {
@@ -143,7 +145,7 @@ void main() {
     test('supports status signal', () {
       final property = animatableDouble(0.0);
       final status = signal(AnimationStatus.forward);
-      final wrapper = KitoAnimation(property, status: status);
+      final wrapper = bridge.KitoAnimation(property, status: status);
 
       expect(wrapper.status, AnimationStatus.forward);
 
@@ -168,7 +170,7 @@ void main() {
       final scale = animatableDouble(1.0);
       final opacity = animatableDouble(1.0);
 
-      final kitoController = KitoAnimationController.create(
+      final kitoController = bridge.KitoAnimationController.create(
         vsync: const TestVSync(),
         duration: const Duration(milliseconds: 1000),
         properties: {
@@ -193,7 +195,7 @@ void main() {
     test('forward and reverse methods work', () {
       final scale = animatableDouble(1.0);
 
-      final kitoController = KitoAnimationController.create(
+      final kitoController = bridge.KitoAnimationController.create(
         vsync: const TestVSync(),
         duration: const Duration(milliseconds: 100),
         properties: {
@@ -216,7 +218,7 @@ void main() {
     test('applies curve to animation', () {
       final scale = animatableDouble(1.0);
 
-      final kitoController = KitoAnimationController.create(
+      final kitoController = bridge.KitoAnimationController.create(
         vsync: const TestVSync(),
         duration: const Duration(milliseconds: 1000),
         curve: Curves.linear,
@@ -265,27 +267,27 @@ void main() {
 
   group('FlutterCurves presets', () {
     test('provides common Flutter curves as easing functions', () {
-      expect(FlutterCurves.linear(0.5), closeTo(0.5, 0.01));
-      expect(FlutterCurves.easeIn(0.0), 0.0);
-      expect(FlutterCurves.easeOut(1.0), 1.0);
-      expect(FlutterCurves.easeInOut(0.5), closeTo(0.5, 0.2));
+      expect(bridge.FlutterCurves.linear(0.5), closeTo(0.5, 0.01));
+      expect(bridge.FlutterCurves.easeIn(0.0), 0.0);
+      expect(bridge.FlutterCurves.easeOut(1.0), 1.0);
+      expect(bridge.FlutterCurves.easeInOut(0.5), closeTo(0.5, 0.2));
     });
 
     test('bounce curves work', () {
-      expect(FlutterCurves.bounceIn(0.0), 0.0);
-      expect(FlutterCurves.bounceOut(1.0), 1.0);
+      expect(bridge.FlutterCurves.bounceIn(0.0), 0.0);
+      expect(bridge.FlutterCurves.bounceOut(1.0), 1.0);
     });
 
     test('elastic curves work', () {
-      expect(FlutterCurves.elasticIn(0.0), 0.0);
-      expect(FlutterCurves.elasticOut(1.0), 1.0);
+      expect(bridge.FlutterCurves.elasticIn(0.0), 0.0);
+      expect(bridge.FlutterCurves.elasticOut(1.0), 1.0);
     });
   });
 
   group('AnimatableTween', () {
     test('evaluates tween at progress', () {
       final property = animatableDouble(0.0);
-      final tween = AnimatableTween(
+      final tween = bridge.AnimatableTween(
         property: property,
         begin: 0.0,
         end: 100.0,
@@ -298,7 +300,7 @@ void main() {
 
     test('works with color', () {
       final property = animatableColor(const Color(0xFF000000));
-      final tween = AnimatableTween(
+      final tween = bridge.AnimatableTween(
         property: property,
         begin: const Color(0xFF000000),
         end: const Color(0xFFFFFFFF),
@@ -317,7 +319,7 @@ void main() {
       );
 
       final property = animatableDouble(0.0);
-      final tween = AnimatableTween(
+      final tween = bridge.AnimatableTween(
         property: property,
         begin: 0.0,
         end: 100.0,
@@ -334,7 +336,6 @@ void main() {
       controller.value = 1.0;
       expect(animation.value, 100.0);
 
-      animation.dispose();
       controller.dispose();
     });
   });
@@ -347,7 +348,7 @@ void main() {
       );
 
       final scale = animatableDouble(1.0);
-      final driver = AnimatableAnimationDriver(
+      final driver = bridge.AnimatableAnimationDriver(
         property: scale,
         animation: controller,
         startValue: 1.0,

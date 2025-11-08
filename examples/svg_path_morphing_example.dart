@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 

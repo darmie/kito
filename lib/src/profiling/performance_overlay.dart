@@ -1,7 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:kito_reactive/kito_reactive.dart';
 import 'animation_profiler.dart';
-import 'dart:math' as math;
 
 /// Performance overlay widget that displays FPS and other metrics
 class KitoPerformanceOverlay extends StatefulWidget {

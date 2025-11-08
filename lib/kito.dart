@@ -14,7 +14,7 @@ export 'src/engine/animation_fsm.dart' show AnimState, AnimEvent, AnimationConte
 export 'src/engine/timeline.dart';
 export 'src/engine/animatable.dart';
 export 'src/engine/keyframe.dart';
-export 'src/engine/flutter_controller_bridge.dart';
+export 'src/engine/flutter_controller_bridge.dart' hide KitoAnimation;
 
 // Easing functions
 export 'src/easing/easing.dart';

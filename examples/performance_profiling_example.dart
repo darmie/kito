@@ -255,14 +255,13 @@ class _AnimationProfilingExampleState extends State<AnimationProfilingExample> {
         .to(scale, 2.0)
         .withDuration(1000)
         .withEasing(Easing.easeOutElastic)
+        .onComplete(() {
+          setState(() {
+            metrics = AnimationProfiler().getMetrics('elastic-animation');
+          });
+        })
         .build()
         .withProfiling('elastic-animation');
-
-    animation!.onComplete(() {
-      setState(() {
-        metrics = AnimationProfiler().getMetrics('elastic-animation');
-      });
-    });
 
     animation!.play();
   }
@@ -347,14 +346,13 @@ class _PerformanceComparisonExampleState
         .to(scale, 1.5)
         .withDuration(300)
         .withEasing(Easing.easeOutCubic)
+        .onComplete(() {
+          setState(() {
+            fastMetrics = AnimationProfiler().getMetrics('fast-animation');
+          });
+        })
         .build()
         .withProfiling('fast-animation');
-
-    animation.onComplete(() {
-      setState(() {
-        fastMetrics = AnimationProfiler().getMetrics('fast-animation');
-      });
-    });
 
     animation.play();
   }
@@ -366,14 +364,13 @@ class _PerformanceComparisonExampleState
         .to(scale, 1.5)
         .withDuration(2000)
         .withEasing(Easing.easeInOutQuint)
+        .onComplete(() {
+          setState(() {
+            slowMetrics = AnimationProfiler().getMetrics('slow-animation');
+          });
+        })
         .build()
         .withProfiling('slow-animation');
-
-    animation.onComplete(() {
-      setState(() {
-        slowMetrics = AnimationProfiler().getMetrics('slow-animation');
-      });
-    });
 
     animation.play();
   }
@@ -470,25 +467,25 @@ class _BatchProfilingExampleState extends State<BatchProfilingExample> {
     for (int i = 0; i < animationIds.length; i++) {
       final scale = animatableDouble(1.0);
       final duration = 500 + (i * 200);
+      final isLast = i == animationIds.length - 1;
 
-      final animation = animate()
+      final builder = animate()
           .to(scale, 1.5)
           .withDuration(duration)
-          .withEasing(Easing.easeInOutCubic)
-          .build()
-          .withProfiling(animationIds[i]);
-
-      animation.play();
+          .withEasing(Easing.easeInOutCubic);
 
       // Stop profiling when the last animation completes
-      if (i == animationIds.length - 1) {
-        animation.onComplete(() {
+      if (isLast) {
+        builder.onComplete(() {
           setState(() {
             _batchProfiler.stopBatch();
             summary = _batchProfiler.getSummary();
           });
         });
       }
+
+      final animation = builder.build().withProfiling(animationIds[i]);
+      animation.play();
     }
   }
 
