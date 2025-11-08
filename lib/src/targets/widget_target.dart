@@ -96,9 +96,9 @@ class AnimatedWidgetProperties {
   Computed<Matrix4> get transform {
     return computed(() {
       final matrix = Matrix4.identity();
-      matrix.translate(translateX.value, translateY.value);
+      matrix.translateByDouble(translateX.value, translateY.value, 0.0, 0.0);
       matrix.rotateZ(rotation.value);
-      matrix.scale(scale.value, scale.value);
+      matrix.scaleByDouble(scale.value, scale.value, 1.0, 0.0);
       return matrix;
     });
   }
@@ -127,8 +127,10 @@ class KitoAnimatedWidget extends StatelessWidget {
         _SignalListenable(properties.rotation.signal),
         _SignalListenable(properties.translateX.signal),
         _SignalListenable(properties.translateY.signal),
-        if (properties.width != null) _SignalListenable(properties.width!.signal),
-        if (properties.height != null) _SignalListenable(properties.height!.signal),
+        if (properties.width != null)
+          _SignalListenable(properties.width!.signal),
+        if (properties.height != null)
+          _SignalListenable(properties.height!.signal),
       ]),
       builder: (context, child) {
         Widget result = child!;
@@ -202,7 +204,7 @@ KitoAnimatedWidget kitoWidget({
 }
 
 /// Extension on BuildContext for reactive rebuilds
-extension ReactiveContext on BuildContext {
+extension ReactiveContextExtension on BuildContext {
   /// Watch a signal and rebuild when it changes
   T watch<T>(Signal<T> signal) {
     // In a production implementation, this would integrate with

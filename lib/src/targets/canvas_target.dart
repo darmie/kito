@@ -58,7 +58,7 @@ abstract class KitoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 
   /// Helper to get a paint object with current properties
-  Paint get paint {
+  Paint get fillPaint {
     return Paint()
       ..color = properties.color.value
       ..strokeWidth = properties.strokeWidth.value
@@ -146,7 +146,7 @@ class CirclePainter extends KitoPainter {
     final center = properties.position.value;
     final radius = properties.size.value.width / 2;
 
-    canvas.drawCircle(center, radius, paint);
+    canvas.drawCircle(center, radius, fillPaint);
   }
 }
 
@@ -162,7 +162,7 @@ class RectanglePainter extends KitoPainter {
       height: properties.size.value.height,
     );
 
-    canvas.drawRect(rect, paint);
+    canvas.drawRect(rect, fillPaint);
   }
 }
 

@@ -72,8 +72,8 @@ abstract class KitoSvgShape extends CustomPainter {
   /// Get fill paint with current properties
   Paint get fillPaint {
     return Paint()
-      ..color = properties.fillColor.value.withOpacity(
-        properties.fillOpacity.value.clamp(0.0, 1.0),
+      ..color = properties.fillColor.value.withValues(
+        alpha: properties.fillOpacity.value.clamp(0.0, 1.0),
       )
       ..style = PaintingStyle.fill;
   }
@@ -81,8 +81,8 @@ abstract class KitoSvgShape extends CustomPainter {
   /// Get stroke paint with current properties
   Paint get strokePaint {
     return Paint()
-      ..color = properties.strokeColor.value.withOpacity(
-        properties.strokeOpacity.value.clamp(0.0, 1.0),
+      ..color = properties.strokeColor.value.withValues(
+        alpha: properties.strokeOpacity.value.clamp(0.0, 1.0),
       )
       ..strokeWidth = properties.strokeWidth.value
       ..style = PaintingStyle.stroke;
