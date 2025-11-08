@@ -406,6 +406,268 @@ final animations = StaggerHelper.createWaveEffect(
 );
 ```
 
+## Atomic Primitives
+
+Atomic primitives are pure, reusable animation building blocks that can be applied to any component. They are composable functions that return configured animations.
+
+### Motion Primitives
+
+#### Elastic (Rubber Band)
+
+```dart
+final scale = animatableDouble(1.0);
+final anim = createElastic(scale, 1.5, config: ElasticConfig.strong);
+anim.play();
+```
+
+**Configs**: `subtle`, `strong`
+
+#### Bounce
+
+```dart
+final posY = animatableDouble(0.0);
+final anim = createBounce(posY, 100.0, config: BounceConfig.playful);
+anim.play();
+```
+
+**Configs**: `subtle`, `playful`
+
+#### Shake/Wiggle
+
+```dart
+final offsetX = animatableDouble(0.0);
+final anim = createShake(offsetX, config: ShakeConfig.strong);
+anim.play();
+```
+
+**Configs**: `subtle`, `strong`
+
+#### Pulse
+
+```dart
+final scale = animatableDouble(1.0);
+final anim = createPulse(scale, config: PulseConfig.infinite);
+anim.play();
+```
+
+**Configs**: `subtle`, `strong`, `infinite`
+
+#### Flash
+
+```dart
+final opacity = animatableDouble(1.0);
+final anim = createFlash(opacity, config: FlashConfig.quick);
+anim.play();
+```
+
+**Configs**: `quick`, `slow`
+
+#### Swing/Pendulum
+
+```dart
+final rotation = animatableDouble(0.0);
+final anim = createSwing(rotation, config: SwingConfig.strong);
+anim.play();
+```
+
+**Configs**: `gentle`, `strong`
+
+#### Jello/Wobble
+
+```dart
+final scaleX = animatableDouble(1.0);
+final anim = createJello(scaleX, config: JelloConfig.strong);
+anim.play();
+```
+
+**Configs**: `subtle`, `strong`
+
+#### Heartbeat
+
+```dart
+final scale = animatableDouble(1.0);
+final anim = createHeartbeat(scale, config: HeartbeatConfig.fast);
+anim.play();
+```
+
+**Configs**: `slow`, `fast`
+
+### Enter/Exit Primitives
+
+#### Fade
+
+```dart
+// Fade in
+final opacity = animatableDouble(0.0);
+final anim = fadeIn(opacity, config: FadeConfig.quick);
+anim.play();
+
+// Fade out
+final animOut = fadeOut(opacity);
+animOut.play();
+```
+
+#### Slide
+
+```dart
+// Slide in from right
+final offsetX = animatableDouble(0.0);
+final anim = slideInFromRight(offsetX, 100.0, config: SlideConfig.smooth);
+anim.play();
+
+// Slide out to left
+final animOut = slideOutToLeft(offsetX, 100.0);
+animOut.play();
+```
+
+**Directions**: `FromRight`, `FromLeft`, `FromTop`, `FromBottom`, `ToRight`, `ToLeft`, `ToTop`, `ToBottom`
+
+#### Scale
+
+```dart
+// Scale in
+final scale = animatableDouble(0.0);
+final anim = scaleIn(scale, config: ScaleConfig.elastic);
+anim.play();
+
+// Scale out
+final animOut = scaleOut(scale);
+animOut.play();
+```
+
+**Configs**: `quick`, `smooth`, `elastic`
+
+#### Rotate
+
+```dart
+// Rotate in
+final rotation = animatableDouble(0.0);
+final anim = rotateIn(rotation, fromDegrees: 180.0);
+anim.play();
+
+// Rotate out
+final animOut = rotateOut(rotation, toDegrees: 180.0);
+animOut.play();
+```
+
+#### Combination Primitives
+
+```dart
+// Fade + Scale
+final opacity = animatableDouble(0.0);
+final scale = animatableDouble(0.0);
+final anim = fadeScaleIn(opacity, scale);
+anim.play();
+
+// Slide + Fade
+final offsetY = animatableDouble(0.0);
+final anim2 = slideFadeIn(opacity, offsetY, 50.0);
+anim2.play();
+
+// Zoom (scale + fade with bounce)
+final anim3 = zoomIn(scale, opacity);
+anim3.play();
+
+// Flip (3D-like rotation)
+final rotation = animatableDouble(0.0);
+final anim4 = flipIn(rotation, opacity);
+anim4.play();
+```
+
+### Timing Primitives
+
+#### Chain (Sequential)
+
+```dart
+chain([
+  fadeIn(opacity1),
+  scaleIn(scale),
+  slideInFromBottom(offsetY, 100.0),
+], gap: 100); // 100ms gap between each
+```
+
+#### Parallel (Simultaneous)
+
+```dart
+parallel([
+  fadeIn(opacity),
+  scaleIn(scale),
+  rotateIn(rotation),
+]);
+```
+
+#### Delay
+
+```dart
+final anim = delay(
+  fadeIn(opacity),
+  milliseconds: 500,
+);
+```
+
+#### Repeat
+
+```dart
+repeat(
+  createPulse(scale),
+  times: 5,
+  gap: 200,
+);
+```
+
+#### Yoyo (Back and Forth)
+
+```dart
+yoyo(
+  slideInFromRight(offsetX, 100.0),
+  times: 3,
+);
+```
+
+#### Spring (Physics-based)
+
+```dart
+final anim = spring(
+  property: scale,
+  target: 1.5,
+  stiffness: 200.0,
+  damping: 10.0,
+);
+anim.play();
+```
+
+#### Momentum (Inertia)
+
+```dart
+final anim = momentum(
+  property: offsetX,
+  velocity: 500.0,
+  friction: 0.95,
+);
+anim.play();
+```
+
+#### Crossfade
+
+```dart
+crossfade(
+  outOpacity: opacity1,
+  inOpacity: opacity2,
+  duration: 400,
+);
+```
+
+#### Ping-Pong
+
+```dart
+pingPong(
+  property: scale,
+  from: 1.0,
+  to: 1.3,
+  times: 5,
+);
+```
+
 ## Customization
 
 All patterns support full customization through configuration classes:

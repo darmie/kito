@@ -21,6 +21,12 @@
 /// - **Grid Stagger**: Grid animations with row/column/diagonal patterns
 /// - **Wave Effect**: Sine wave animation patterns
 ///
+/// ## Atomic Primitives:
+///
+/// - **Motion**: Elastic, bounce, shake, pulse, flash, swing, jello, heartbeat
+/// - **Enter/Exit**: Fade, slide, scale, rotate, blur, zoom, flip
+/// - **Timing**: Chain, parallel, delay, repeat, yoyo, spring, momentum
+///
 /// Example:
 /// ```dart
 /// import 'package:kito_patterns/kito_patterns.dart';
@@ -73,3 +79,8 @@ export 'src/drag_shuffle/drag_shuffle_grid.dart';
 
 // Animation Helpers
 export 'src/helpers/stagger.dart';
+
+// Atomic Primitives
+export 'src/primitives/motion_primitives.dart';
+export 'src/primitives/enter_exit_primitives.dart';
+export 'src/primitives/timing_primitives.dart';
