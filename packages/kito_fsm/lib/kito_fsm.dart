@@ -12,3 +12,4 @@ export 'src/runtime/state_machine.dart';
 export 'src/runtime/config.dart';
 export 'src/runtime/transition.dart';
 export 'src/runtime/action_context.dart';
+export 'src/parallel_fsm.dart';
