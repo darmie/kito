@@ -5,14 +5,12 @@
 /// and SVG.
 library kito;
 
-// Reactive primitives
-export 'src/reactive/signal.dart';
-export 'src/reactive/computed.dart';
-export 'src/reactive/effect.dart';
-export 'src/reactive/reactive_context.dart';
+// Reactive primitives (re-exported from kito_reactive)
+export 'package:kito_reactive/kito_reactive.dart';
 
 // Animation engine
 export 'src/engine/animation.dart';
+export 'src/engine/animation_fsm.dart' show AnimState, AnimEvent, AnimationContext, AnimationStateMachine;
 export 'src/engine/timeline.dart';
 export 'src/engine/animatable.dart';
 export 'src/engine/keyframe.dart';

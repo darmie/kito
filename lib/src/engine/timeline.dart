@@ -1,4 +1,4 @@
-import '../reactive/signal.dart';
+import 'package:kito_reactive/kito_reactive.dart';
 import '../types/types.dart';
 import 'animation.dart';
 

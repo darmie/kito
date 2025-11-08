@@ -1,7 +1,7 @@
-name: kito
-description: A powerful, fine-grained reactive animation library for Flutter inspired by anime.js
+name: kito_patterns
+description: Pre-built state machine patterns for common UI interactions with animation support
 version: 0.1.0
-homepage: https://github.com/yourusername/kito
+repository: https://github.com/darmie/kito
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,15 +10,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  meta: ^1.10.0
 
   # Reactive primitives
   kito_reactive:
-    path: packages/kito_reactive
+    path: ../kito_reactive
 
   # State machine library
   kito_fsm:
-    path: packages/kito_fsm
+    path: ../kito_fsm
+
+  # Animation library
+  kito:
+    path: ../..
+
+  meta: ^1.9.0
 
 dev_dependencies:
   flutter_test:

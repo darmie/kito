@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
+import 'package:kito_reactive/kito_reactive.dart';
 import '../engine/animatable.dart';
-import '../reactive/signal.dart';
 
 /// Properties for SVG animations
 class SvgAnimationProperties {
