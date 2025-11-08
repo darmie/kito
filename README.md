@@ -48,19 +48,19 @@ Add to your `pubspec.yaml`:
 dependencies:
   kito:
     git:
-      url: https://github.com/yourusername/kito.git
+      url: https://github.com/darmie/kito.git
       path: .
   kito_reactive:
     git:
-      url: https://github.com/yourusername/kito.git
+      url: https://github.com/darmie/kito.git
       path: packages/kito_reactive
   kito_fsm:
     git:
-      url: https://github.com/yourusername/kito.git
+      url: https://github.com/darmie/kito.git
       path: packages/kito_fsm
   kito_patterns:
     git:
-      url: https://github.com/yourusername/kito.git
+      url: https://github.com/darmie/kito.git
       path: packages/kito_patterns
 ```
 
