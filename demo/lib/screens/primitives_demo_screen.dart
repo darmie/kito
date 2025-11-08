@@ -516,8 +516,513 @@ class _EnterExitPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Enter/Exit Primitives - Coming soon'),
+    return GridView.count(
+      padding: const EdgeInsets.all(24),
+      crossAxisCount: 3,
+      mainAxisSpacing: 24,
+      crossAxisSpacing: 24,
+      childAspectRatio: 1.2,
+      children: const [
+        _FadeInDemo(),
+        _SlideInDemo(),
+        _ScaleInDemo(),
+        _ZoomInDemo(),
+        _FlipInDemo(),
+        _RotateInDemo(),
+        _SlideFadeDemo(),
+        _FadeScaleDemo(),
+      ],
+    );
+  }
+}
+
+class _FadeInDemo extends StatefulWidget {
+  const _FadeInDemo();
+
+  @override
+  State<_FadeInDemo> createState() => _FadeInDemoState();
+}
+
+class _FadeInDemoState extends State<_FadeInDemo> {
+  late final opacity = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    opacity.value = 0.0;
+    _animation = fadeIn(opacity, config: FadeConfig.quick);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Fade In',
+      description: 'Simple opacity transition',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final opacity = animatableDouble(0.0);
+final anim = fadeIn(
+  opacity,
+  config: FadeConfig.quick,
+);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Opacity(
+            opacity: opacity.value,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B4513),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: const Center(
+                child: Icon(Icons.check, color: Colors.white, size: 48),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SlideInDemo extends StatefulWidget {
+  const _SlideInDemo();
+
+  @override
+  State<_SlideInDemo> createState() => _SlideInDemoState();
+}
+
+class _SlideInDemoState extends State<_SlideInDemo> {
+  late final offsetY = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    offsetY.value = 0.0;
+    _animation = slideInFromBottom(offsetY, 100.0, config: SlideConfig.smooth);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Slide In',
+      description: 'Slide from bottom',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final offsetY = animatableDouble(0.0);
+final anim = slideInFromBottom(
+  offsetY, 100.0,
+  config: SlideConfig.smooth,
+);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Transform.translate(
+            offset: Offset(0, offsetY.value),
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD2691E),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: const Center(
+                child: Icon(Icons.arrow_upward, color: Colors.white, size: 48),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScaleInDemo extends StatefulWidget {
+  const _ScaleInDemo();
+
+  @override
+  State<_ScaleInDemo> createState() => _ScaleInDemoState();
+}
+
+class _ScaleInDemoState extends State<_ScaleInDemo> {
+  late final scale = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    scale.value = 0.0;
+    _animation = scaleIn(scale, config: ScaleConfig.elastic);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Scale In',
+      description: 'Grow with elastic easing',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final scale = animatableDouble(0.0);
+final anim = scaleIn(
+  scale,
+  config: ScaleConfig.elastic,
+);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Transform.scale(
+            scale: scale.value,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6B6B6B),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: const Center(
+                child: Icon(Icons.add, color: Colors.white, size: 48),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ZoomInDemo extends StatefulWidget {
+  const _ZoomInDemo();
+
+  @override
+  State<_ZoomInDemo> createState() => _ZoomInDemoState();
+}
+
+class _ZoomInDemoState extends State<_ZoomInDemo> {
+  late final scale = animatableDouble(0.0);
+  late final opacity = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    scale.value = 0.0;
+    opacity.value = 0.0;
+    _animation = zoomIn(scale, opacity);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Zoom In',
+      description: 'Scale + fade with bounce',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final scale = animatableDouble(0.0);
+final opacity = animatableDouble(0.0);
+final anim = zoomIn(scale, opacity);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Opacity(
+            opacity: opacity.value,
+            child: Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4A4A4A),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(Icons.zoom_in, color: Colors.white, size: 48),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FlipInDemo extends StatefulWidget {
+  const _FlipInDemo();
+
+  @override
+  State<_FlipInDemo> createState() => _FlipInDemoState();
+}
+
+class _FlipInDemoState extends State<_FlipInDemo> {
+  late final rotation = animatableDouble(0.0);
+  late final opacity = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    rotation.value = 0.0;
+    opacity.value = 0.0;
+    _animation = flipIn(rotation, opacity);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Flip In',
+      description: '3D-like rotation',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final rotation = animatableDouble(0.0);
+final opacity = animatableDouble(0.0);
+final anim = flipIn(rotation, opacity);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Opacity(
+            opacity: opacity.value,
+            child: Transform(
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateY(rotation.value * (3.14159 / 180)),
+              alignment: Alignment.center,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B4513),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.flip, color: Colors.white, size: 48),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RotateInDemo extends StatefulWidget {
+  const _RotateInDemo();
+
+  @override
+  State<_RotateInDemo> createState() => _RotateInDemoState();
+}
+
+class _RotateInDemoState extends State<_RotateInDemo> {
+  late final rotation = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    rotation.value = 0.0;
+    _animation = rotateIn(rotation, fromDegrees: 180.0);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Rotate In',
+      description: 'Clockwise rotation',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final rotation = animatableDouble(0.0);
+final anim = rotateIn(
+  rotation,
+  fromDegrees: 180.0,
+);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Transform.rotate(
+            angle: rotation.value * (3.14159 / 180),
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD2691E),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: const Center(
+                child: Icon(Icons.rotate_right, color: Colors.white, size: 48),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SlideFadeDemo extends StatefulWidget {
+  const _SlideFadeDemo();
+
+  @override
+  State<_SlideFadeDemo> createState() => _SlideFadeDemoState();
+}
+
+class _SlideFadeDemoState extends State<_SlideFadeDemo> {
+  late final opacity = animatableDouble(0.0);
+  late final offsetX = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    opacity.value = 0.0;
+    offsetX.value = 0.0;
+    _animation = slideFadeIn(opacity, offsetX, 50.0);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Slide + Fade',
+      description: 'Combined slide and fade',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final opacity = animatableDouble(0.0);
+final offsetX = animatableDouble(0.0);
+final anim = slideFadeIn(
+  opacity, offsetX, 50.0,
+);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Opacity(
+            opacity: opacity.value,
+            child: Transform.translate(
+              offset: Offset(offsetX.value, 0),
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6B6B6B),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.arrow_forward, color: Colors.white, size: 48),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FadeScaleDemo extends StatefulWidget {
+  const _FadeScaleDemo();
+
+  @override
+  State<_FadeScaleDemo> createState() => _FadeScaleDemoState();
+}
+
+class _FadeScaleDemoState extends State<_FadeScaleDemo> {
+  late final opacity = animatableDouble(0.0);
+  late final scale = animatableDouble(0.0);
+  KitoAnimation? _animation;
+
+  void _trigger() {
+    _animation?.dispose();
+    opacity.value = 0.0;
+    scale.value = 0.0;
+    _animation = fadeScaleIn(opacity, scale);
+    _animation!.play();
+  }
+
+  @override
+  void dispose() {
+    _animation?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Fade + Scale',
+      description: 'Combined fade and scale',
+      onTrigger: _trigger,
+      codeSnippet: '''
+final opacity = animatableDouble(0.0);
+final scale = animatableDouble(0.0);
+final anim = fadeScaleIn(
+  opacity, scale,
+);
+anim.play();''',
+      child: Center(
+        child: ReactiveBuilder(
+          builder: (_) => Opacity(
+            opacity: opacity.value,
+            child: Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A4A4A),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.star, color: Colors.white, size: 48),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
