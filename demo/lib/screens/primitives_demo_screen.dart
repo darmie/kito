@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
-import 'package:kito_reactive/kito_reactive.dart';
 import '../widgets/demo_scaffold.dart';
 import '../widgets/demo_card.dart';
 

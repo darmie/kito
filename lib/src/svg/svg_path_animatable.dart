@@ -1,6 +1,5 @@
 import 'package:kito_reactive/kito_reactive.dart';
 import '../engine/animatable.dart';
-import '../types/types.dart';
 import 'svg_path.dart';
 
 /// Animatable SVG path property

@@ -1,6 +1,5 @@
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
-import 'package:kito_reactive/kito_reactive.dart';
 
 /// Drag-and-shuffle states for reorderable items
 enum DragShuffleState {

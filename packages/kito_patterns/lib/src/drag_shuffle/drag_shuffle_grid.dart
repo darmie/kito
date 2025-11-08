@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:kito/kito.dart';
-import 'package:kito_reactive/kito_reactive.dart';
 import 'drag_shuffle_fsm.dart';
 
 /// Grid-specific configuration for drag-and-shuffle

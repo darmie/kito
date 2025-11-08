@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 

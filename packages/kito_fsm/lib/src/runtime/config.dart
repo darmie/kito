@@ -1,7 +1,6 @@
 /// Configuration types for state machines.
 library;
 
-import 'action_context.dart';
 
 /// Configuration for an entire state machine
 class StateMachineConfig<S extends Enum, E extends Enum, C> {

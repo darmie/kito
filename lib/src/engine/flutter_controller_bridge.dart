@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:kito_reactive/kito_reactive.dart';
 import '../types/types.dart';
-import '../easing/easing.dart';
 import 'animatable.dart' as kito;
-import 'animation.dart' as kito_engine;
 
 /// Bridge between Kito animations and Flutter's AnimationController
 ///

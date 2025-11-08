@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'package:flutter/scheduler.dart';
 import 'package:kito_reactive/kito_reactive.dart';
 
 /// Performance metrics for an animation

@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
-import 'package:kito_reactive/kito_reactive.dart';
 import '../engine/animatable.dart';
 
 /// Properties for canvas/custom paint animations

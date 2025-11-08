@@ -1,9 +1,6 @@
-import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:kito_fsm/kito_fsm.dart' hide AnimationCallback, AnimationCompleteCallback, AnimationDirection;
 import '../types/types.dart';
-import '../easing/easing.dart';
-import 'animatable.dart';
 import 'animation.dart';
 import 'keyframe.dart';
 

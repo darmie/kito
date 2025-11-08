@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:kito_reactive/kito_reactive.dart';
 import '../types/types.dart';
