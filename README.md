@@ -339,30 +339,96 @@ animate()
     .play();
 ```
 
+## 🎯 Showcase
+
+Kito enables powerful interactive animations with minimal code:
+
+### Match-3 Game
+```dart
+// Fully playable game with cascades, combos, and win/loss detection
+- Tile selection with adjacency validation
+- Invalid move swap-back animations
+- Match detection with combo multipliers
+- Gravity-based tile dropping with stagger
+- Particle effects for matched tiles
+```
+
+### Card Stack (Tinder-style)
+```dart
+// Gesture-driven card swiping
+void _onPanUpdate(DragUpdateDetails details) {
+  final delta = details.localPosition - dragStart!;
+  card.position.value = delta;
+  card.rotation.value = (delta.dx / 200).clamp(-0.26, 0.26);
+}
+
+// Threshold-based swipe completion
+if (card.position.value.dx.abs() > swipeThreshold) {
+  _swipeCard(right: card.position.value.dx > 0);
+} else {
+  _snapBack();
+}
+```
+
+### Swipe to Delete
+```dart
+// Progressive visual feedback during swipe
+final swipeProgress = (offset.dx.abs() / threshold).clamp(0.0, 1.0);
+
+// Smooth delete animation
+animate()
+  .to(item.swipeOffset, Offset(targetX, 0))
+  .to(item.opacity, 0.0)
+  .to(item.scale, 0.8)
+  .withDuration(300)
+  .build()
+  .play();
+```
+
+### Photo Gallery
+```dart
+// Shared element transitions
+final expandAnim = animate()
+    .to(photo.position, targetPosition)
+    .to(photo.size, targetSize)
+    .withDuration(400)
+    .build();
+
+// Coordinated parallel animations
+final fadeAnims = otherPhotos.map((p) =>
+  animate().to(p.opacity, 0.0).build()
+);
+
+parallel([expandAnim, ...fadeAnims]);
+```
+
 ## 🎮 Demo
 
-The interactive Flutter web demo showcases 22+ live examples organized by category:
+The interactive Flutter web demo showcases 30+ live examples organized by category:
 
 ### Primitives Demos
 - **Motion Tab**: Elastic, Bounce, Shake, Pulse, Flash, Swing, Jello, Heartbeat
 - **Enter/Exit Tab**: Fade, Slide, Scale, FadeScale, SlideFade, Zoom, Flip, Rotate
 - **Timing Tab**: Chain, Parallel, Spring, Crossfade, Ping-Pong, Stagger
 
-### UI Patterns (Coming Soon)
-- Button states with animations
-- Form validation with feedback
-- Drawer slide transitions
-- Modal show/hide effects
+### UI Patterns
+- **Button Pattern**: Press states with bouncy/elastic animations
+- **Form Pattern**: Multi-field validation with animated feedback
+- **Drawer Pattern**: Slide-in/out transitions with backdrop
+- **Modal Pattern**: Multiple animation types (fade, scale, slide, bounce)
+- **Toast Notifications**: Auto-dismissing notifications with slide animations
 
-### Interactive Patterns (Coming Soon)
-- Pull-to-refresh
-- Drag-shuffle lists
-- Drag-shuffle grids
+### Interactive Patterns
+- **Pull-to-Refresh**: Gesture-driven refresh with threshold detection
+- **Drag-Shuffle List**: Reorderable list with swap/shift/push modes
+- **Drag-Shuffle Grid**: Reorderable grid with wave/radial/row/column repositioning
+- **Swipe to Delete**: List items with swipe-to-remove gesture
 
-### Complex Compositions (Coming Soon)
-- Multi-step onboarding flows
-- Card stack interactions
-- Advanced timeline orchestrations
+### Complex Compositions
+- **Match-3 Game**: Fully playable tile-matching game with cascades and combos
+- **Card Stack**: Tinder-style swipeable cards with gesture-driven rotation
+- **Photo Gallery**: Shared element transitions with expand/collapse
+- **Onboarding Flow**: Multi-step wizard with directional page transitions
 
 Run the demo:
 
@@ -654,15 +720,17 @@ flutter test
 - [x] Reactive primitives (signals, computed, effects)
 - [x] Hierarchical state machines with event bubbling
 - [x] Atomic animation primitives (22+ primitives)
-- [x] UI state machine patterns
-- [x] Interactive drag patterns
-- [x] Flutter web demo app
-- [ ] Spring physics animations (basic implementation complete)
-- [ ] Gesture-driven animations
+- [x] UI state machine patterns (button, form, drawer, modal, toast)
+- [x] Interactive drag patterns (pull-to-refresh, drag-shuffle, swipe-to-delete)
+- [x] Flutter web demo app with 30+ examples
+- [x] Gesture-driven animations (swipe, drag, pan gestures)
+- [x] Complex compositions (games, card stacks, galleries, onboarding)
+- [x] Spring physics animations (basic implementation complete)
 - [ ] SVG path morphing (advanced)
 - [ ] Integration with Flutter's AnimationController
 - [ ] Performance profiling tools
 - [ ] Animation presets library
+- [ ] Enhanced documentation and tutorials
 - [ ] Web deployment and hosting
 - [ ] Video tutorials and documentation site
 
