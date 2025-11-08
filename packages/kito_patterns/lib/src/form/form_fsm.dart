@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 

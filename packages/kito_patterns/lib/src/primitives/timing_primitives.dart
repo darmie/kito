@@ -312,7 +312,7 @@ void pingPong({
     final anim = animate()
         .to(property, isForward ? to : from)
         .withDuration(duration)
-        .withEasing(Easing.easeInOut)
+        .withEasing(Easing.easeInOutCubic)
         .build();
 
     anim.play();
@@ -351,7 +351,7 @@ KitoAnimation easeThrough({
   required Animatable<double> property,
   required List<double> values,
   int duration = 1000,
-  EasingFunction easing = Easing.easeInOut,
+  EasingFunction easing = Easing.easeInOutCubic
 }) {
   if (values.length < 2) {
     throw ArgumentError('Need at least 2 values for easeThrough');
@@ -402,7 +402,7 @@ KitoAnimation smoothTo({
         Keyframe(
           value: start + (diff * (1.0 + tension)),
           offset: 0.6,
-          easing: Easing.easeOut,
+          easing: Easing.easeOutCubic
         ),
         Keyframe(value: target, offset: 1.0),
       ])
@@ -438,7 +438,7 @@ KitoAnimation momentum({
   return animate()
       .to(property, target)
       .withDuration(duration)
-      .withEasing(Easing.easeOut)
+      .withEasing(Easing.easeOutCubic)
       .build();
 }
 
@@ -473,7 +473,7 @@ KitoAnimation spring({
         Keyframe(
           value: target + (target - start) * overshoot,
           offset: 0.6,
-          easing: Easing.easeOut,
+          easing: Easing.easeOutCubic
         ),
         Keyframe(
           value: target - (target - start) * (overshoot * 0.3),

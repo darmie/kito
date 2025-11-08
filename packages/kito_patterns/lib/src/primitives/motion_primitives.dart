@@ -80,10 +80,9 @@ KitoAnimation createElastic<T>(
         1.0 + amplitude,
       );
       keyframes.add(Keyframe(
-        value: overshoot,
-        offset: offset - (0.5 / config.oscillations),
-        easing: Easing.easeInOut,
-      ));
+          value: overshoot,
+          offset: offset - (0.5 / config.oscillations),
+          easing: Easing.easeInOutCubic));
     } else {
       // Undershoot
       final undershoot = property.interpolate(
@@ -92,10 +91,9 @@ KitoAnimation createElastic<T>(
         1.0 - amplitude,
       );
       keyframes.add(Keyframe(
-        value: undershoot,
-        offset: offset - (0.5 / config.oscillations),
-        easing: Easing.easeInOut,
-      ));
+          value: undershoot,
+          offset: offset - (0.5 / config.oscillations),
+          easing: Easing.easeInOutCubic));
     }
   }
 
@@ -130,7 +128,7 @@ class BounceConfig {
   });
 
   static const BounceConfig subtle = BounceConfig(
-    bounces = 2,
+    bounces: 2,
     initialBounceHeight: 0.2,
     duration: 600,
   );
@@ -166,7 +164,8 @@ KitoAnimation createBounce<T>(
   // Create bounces
   for (var i = 1; i <= config.bounces; i++) {
     final progress = i / config.bounces;
-    final bounceHeight = config.initialBounceHeight * (1.0 - (progress * config.decay));
+    final bounceHeight =
+        config.initialBounceHeight * (1.0 - (progress * config.decay));
 
     // Peak of bounce
     final peak = property.interpolate(
@@ -176,17 +175,13 @@ KitoAnimation createBounce<T>(
     );
 
     keyframes.add(Keyframe(
-      value: peak,
-      offset: progress - (0.5 / config.bounces),
-      easing: Easing.easeOut,
-    ));
+        value: peak,
+        offset: progress - (0.5 / config.bounces),
+        easing: Easing.easeOutCubic));
 
     // Return to target
     keyframes.add(Keyframe(
-      value: targetValue,
-      offset: progress,
-      easing: Easing.easeIn,
-    ));
+        value: targetValue, offset: progress, easing: Easing.easeInCubic));
   }
 
   return animate()
@@ -258,10 +253,9 @@ KitoAnimation createShake(
     final direction = i % 2 == 0 ? 1.0 : -1.0;
 
     keyframes.add(Keyframe(
-      value: startValue + (amplitude * direction),
-      offset: progress - (0.5 / config.shakes),
-      easing: Easing.easeInOut,
-    ));
+        value: startValue + (amplitude * direction),
+        offset: progress - (0.5 / config.shakes),
+        easing: Easing.easeInOutCubic));
 
     // Return to center
     if (i < config.shakes) {
@@ -332,13 +326,14 @@ KitoAnimation createPulse(
 }) {
   final startValue = property.value;
 
-  final anim = animate()
-      .withKeyframes(property, [
-        Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue * config.peakScale, offset: 0.5, easing: Easing.easeInOut),
-        Keyframe(value: startValue, offset: 1.0),
-      ])
-      .withDuration(config.duration);
+  final anim = animate().withKeyframes(property, [
+    Keyframe(value: startValue, offset: 0.0),
+    Keyframe(
+        value: startValue * config.peakScale,
+        offset: 0.5,
+        easing: Easing.easeInOutCubic),
+    Keyframe(value: startValue, offset: 1.0),
+  ]).withDuration(config.duration);
 
   if (config.pulses == -1) {
     return anim.loopInfinitely().build();
@@ -400,10 +395,9 @@ KitoAnimation createFlash(
 
     // Flash
     keyframes.add(Keyframe(
-      value: config.peakOpacity,
-      offset: progress - (0.5 / config.flashes),
-      easing: Easing.easeInOut,
-    ));
+        value: config.peakOpacity,
+        offset: progress - (0.5 / config.flashes),
+        easing: Easing.easeInOutCubic));
 
     // Return
     keyframes.add(Keyframe(
@@ -476,10 +470,9 @@ KitoAnimation createSwing(
     final direction = i % 2 == 0 ? 1.0 : -1.0;
 
     keyframes.add(Keyframe(
-      value: startValue + (amplitude * direction),
-      offset: progress - (0.5 / config.swings),
-      easing: Easing.easeInOut,
-    ));
+        value: startValue + (amplitude * direction),
+        offset: progress - (0.5 / config.swings),
+        easing: Easing.easeInOutCubic));
 
     // Return to center
     keyframes.add(Keyframe(
@@ -544,10 +537,14 @@ KitoAnimation createJello(
         Keyframe(value: startValue, offset: 0.0),
         Keyframe(value: startValue * (1.0 + config.intensity), offset: 0.222),
         Keyframe(value: startValue * (1.0 - config.intensity), offset: 0.333),
-        Keyframe(value: startValue * (1.0 + config.intensity * 0.5), offset: 0.444),
-        Keyframe(value: startValue * (1.0 - config.intensity * 0.5), offset: 0.555),
-        Keyframe(value: startValue * (1.0 + config.intensity * 0.25), offset: 0.666),
-        Keyframe(value: startValue * (1.0 - config.intensity * 0.25), offset: 0.777),
+        Keyframe(
+            value: startValue * (1.0 + config.intensity * 0.5), offset: 0.444),
+        Keyframe(
+            value: startValue * (1.0 - config.intensity * 0.5), offset: 0.555),
+        Keyframe(
+            value: startValue * (1.0 + config.intensity * 0.25), offset: 0.666),
+        Keyframe(
+            value: startValue * (1.0 - config.intensity * 0.25), offset: 0.777),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -599,17 +596,21 @@ KitoAnimation createHeartbeat(
 }) {
   final startValue = property.value;
 
-  final anim = animate()
-      .withKeyframes(property, [
-        Keyframe(value: startValue, offset: 0.0),
-        // First beat
-        Keyframe(value: startValue * config.peakScale, offset: 0.14, easing: Easing.easeOut),
-        Keyframe(value: startValue, offset: 0.28),
-        // Second beat
-        Keyframe(value: startValue * config.peakScale, offset: 0.42, easing: Easing.easeOut),
-        Keyframe(value: startValue, offset: 0.70),
-      ])
-      .withDuration(config.duration);
+  final anim = animate().withKeyframes(property, [
+    Keyframe(value: startValue, offset: 0.0),
+    // First beat
+    Keyframe(
+        value: startValue * config.peakScale,
+        offset: 0.14,
+        easing: Easing.easeOutCubic),
+    Keyframe(value: startValue, offset: 0.28),
+    // Second beat
+    Keyframe(
+        value: startValue * config.peakScale,
+        offset: 0.42,
+        easing: Easing.easeOutCubic),
+    Keyframe(value: startValue, offset: 0.70),
+  ]).withDuration(config.duration);
 
   if (config.beats == -1) {
     return anim.loopInfinitely().build();
@@ -721,15 +722,42 @@ KitoAnimation createTadaScale(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue * 0.9, offset: 0.1, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.2, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.3, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.4, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.5, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.6, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.7, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.8, easing: Easing.easeInOut),
-        Keyframe(value: startValue * config.peakScale, offset: 0.9, easing: Easing.easeInOut),
+        Keyframe(
+            value: startValue * 0.9,
+            offset: 0.1,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.2,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.3,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.4,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.5,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.6,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.7,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.8,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue * config.peakScale,
+            offset: 0.9,
+            easing: Easing.easeInOutCubic),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -745,15 +773,42 @@ KitoAnimation createTadaRotation(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue - config.peakRotation, offset: 0.1, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.peakRotation, offset: 0.2, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.peakRotation, offset: 0.3, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.peakRotation, offset: 0.4, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.peakRotation, offset: 0.5, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.peakRotation, offset: 0.6, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.peakRotation, offset: 0.7, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.peakRotation, offset: 0.8, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.peakRotation, offset: 0.9, easing: Easing.easeInOut),
+        Keyframe(
+            value: startValue - config.peakRotation,
+            offset: 0.1,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.peakRotation,
+            offset: 0.2,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.peakRotation,
+            offset: 0.3,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.peakRotation,
+            offset: 0.4,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.peakRotation,
+            offset: 0.5,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.peakRotation,
+            offset: 0.6,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.peakRotation,
+            offset: 0.7,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.peakRotation,
+            offset: 0.8,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.peakRotation,
+            offset: 0.9,
+            easing: Easing.easeInOutCubic),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -810,11 +865,26 @@ KitoAnimation createWobbleRotation(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue - config.maxRotation, offset: 0.15, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxRotation, offset: 0.30, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.maxRotation, offset: 0.45, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxRotation, offset: 0.60, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.maxRotation * 0.5, offset: 0.75, easing: Easing.easeInOut),
+        Keyframe(
+            value: startValue - config.maxRotation,
+            offset: 0.15,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxRotation,
+            offset: 0.30,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.maxRotation,
+            offset: 0.45,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxRotation,
+            offset: 0.60,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.maxRotation * 0.5,
+            offset: 0.75,
+            easing: Easing.easeInOutCubic),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -840,11 +910,26 @@ KitoAnimation createWobbleTranslation(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue - config.maxOffset, offset: 0.15, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxOffset, offset: 0.30, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.maxOffset, offset: 0.45, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxOffset, offset: 0.60, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.maxOffset * 0.5, offset: 0.75, easing: Easing.easeInOut),
+        Keyframe(
+            value: startValue - config.maxOffset,
+            offset: 0.15,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxOffset,
+            offset: 0.30,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.maxOffset,
+            offset: 0.45,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxOffset,
+            offset: 0.60,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.maxOffset * 0.5,
+            offset: 0.75,
+            easing: Easing.easeInOutCubic),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -898,11 +983,26 @@ KitoAnimation createRubberBandX(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue * (1.0 + config.stretchIntensity), offset: 0.3, easing: Easing.easeOut),
-        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.5), offset: 0.4, easing: Easing.easeIn),
-        Keyframe(value: startValue * (1.0 + config.stretchIntensity * 0.3), offset: 0.5, easing: Easing.easeOut),
-        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.2), offset: 0.65, easing: Easing.easeIn),
-        Keyframe(value: startValue * (1.0 + config.stretchIntensity * 0.1), offset: 0.75, easing: Easing.easeOut),
+        Keyframe(
+            value: startValue * (1.0 + config.stretchIntensity),
+            offset: 0.3,
+            easing: Easing.easeOutCubic),
+        Keyframe(
+            value: startValue * (1.0 - config.stretchIntensity * 0.5),
+            offset: 0.4,
+            easing: Easing.easeInCubic),
+        Keyframe(
+            value: startValue * (1.0 + config.stretchIntensity * 0.3),
+            offset: 0.5,
+            easing: Easing.easeOutCubic),
+        Keyframe(
+            value: startValue * (1.0 - config.stretchIntensity * 0.2),
+            offset: 0.65,
+            easing: Easing.easeInCubic),
+        Keyframe(
+            value: startValue * (1.0 + config.stretchIntensity * 0.1),
+            offset: 0.75,
+            easing: Easing.easeOutCubic),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -918,11 +1018,26 @@ KitoAnimation createRubberBandY(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.5), offset: 0.3, easing: Easing.easeOut),
-        Keyframe(value: startValue * (1.0 + config.stretchIntensity), offset: 0.4, easing: Easing.easeIn),
-        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.2), offset: 0.5, easing: Easing.easeOut),
-        Keyframe(value: startValue * (1.0 + config.stretchIntensity * 0.3), offset: 0.65, easing: Easing.easeIn),
-        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.1), offset: 0.75, easing: Easing.easeOut),
+        Keyframe(
+            value: startValue * (1.0 - config.stretchIntensity * 0.5),
+            offset: 0.3,
+            easing: Easing.easeOutCubic),
+        Keyframe(
+            value: startValue * (1.0 + config.stretchIntensity),
+            offset: 0.4,
+            easing: Easing.easeInCubic),
+        Keyframe(
+            value: startValue * (1.0 - config.stretchIntensity * 0.2),
+            offset: 0.5,
+            easing: Easing.easeOutCubic),
+        Keyframe(
+            value: startValue * (1.0 + config.stretchIntensity * 0.3),
+            offset: 0.65,
+            easing: Easing.easeInCubic),
+        Keyframe(
+            value: startValue * (1.0 - config.stretchIntensity * 0.1),
+            offset: 0.75,
+            easing: Easing.easeOutCubic),
         Keyframe(value: startValue, offset: 1.0),
       ])
       .withDuration(config.duration)
@@ -973,12 +1088,30 @@ KitoAnimation createHeadShake(
   return animate()
       .withKeyframes(property, [
         Keyframe(value: startValue, offset: 0.0),
-        Keyframe(value: startValue - config.maxRotation * 0.5, offset: 0.065, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxRotation, offset: 0.185, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.maxRotation, offset: 0.315, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxRotation, offset: 0.435, easing: Easing.easeInOut),
-        Keyframe(value: startValue - config.maxRotation, offset: 0.565, easing: Easing.easeInOut),
-        Keyframe(value: startValue + config.maxRotation * 0.5, offset: 0.685, easing: Easing.easeInOut),
+        Keyframe(
+            value: startValue - config.maxRotation * 0.5,
+            offset: 0.065,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxRotation,
+            offset: 0.185,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.maxRotation,
+            offset: 0.315,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxRotation,
+            offset: 0.435,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue - config.maxRotation,
+            offset: 0.565,
+            easing: Easing.easeInOutCubic),
+        Keyframe(
+            value: startValue + config.maxRotation * 0.5,
+            offset: 0.685,
+            easing: Easing.easeInOutCubic),
         Keyframe(value: startValue, offset: 0.815),
       ])
       .withDuration(config.duration)

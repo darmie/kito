@@ -4,19 +4,19 @@ import 'package:kito_fsm/kito_fsm.dart';
 
 /// States for animated list items
 enum ListItemState {
-  hidden,      // Not visible
-  entering,    // Animating in
-  visible,     // Fully visible
-  exiting,     // Animating out
-  removed,     // Removed from list
+  hidden, // Not visible
+  entering, // Animating in
+  visible, // Fully visible
+  exiting, // Animating out
+  removed, // Removed from list
 }
 
 /// Events for animated list items
 enum ListItemEvent {
-  insert,      // Insert item
-  show,        // Show item (after insert animation)
-  remove,      // Remove item
-  complete,    // Animation complete (internal)
+  insert, // Insert item
+  show, // Show item (after insert animation)
+  remove, // Remove item
+  complete, // Animation complete (internal)
 }
 
 /// Configuration for list item animations
@@ -55,7 +55,7 @@ class ListItemAnimationConfig {
   /// Fade in animation
   static ListItemAnimationConfig fadeIn({
     int duration = 300,
-    EasingFunction easing = Easing.easeOut,
+    EasingFunction easing = Easing.easeOutSine,
   }) {
     return ListItemAnimationConfig(
       enterDuration: duration,
@@ -121,7 +121,8 @@ class ListItemContext {
 }
 
 /// State machine for animated list items
-class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent, ListItemContext> {
+class ListItemStateMachine
+    extends KitoStateMachine<ListItemState, ListItemEvent, ListItemContext> {
   ListItemStateMachine(ListItemContext context)
       : super(
           initial: ListItemState.hidden,
@@ -131,7 +132,9 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
           context: context,
         );
 
-  static Map<ListItemState, StateConfig<ListItemState, ListItemEvent, ListItemContext>> _buildStates() {
+  static Map<ListItemState,
+          StateConfig<ListItemState, ListItemEvent, ListItemContext>>
+      _buildStates() {
     return {
       ListItemState.hidden: StateConfig(
         state: ListItemState.hidden,
@@ -145,7 +148,6 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
           ),
         },
       ),
-
       ListItemState.entering: StateConfig(
         state: ListItemState.entering,
         transitions: {
@@ -166,7 +168,6 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
           ),
         },
       ),
-
       ListItemState.visible: StateConfig(
         state: ListItemState.visible,
         transitions: {
@@ -179,7 +180,6 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
           ),
         },
       ),
-
       ListItemState.exiting: StateConfig(
         state: ListItemState.exiting,
         transitions: {
@@ -192,7 +192,6 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
           ),
         },
       ),
-
       ListItemState.removed: StateConfig(
         state: ListItemState.removed,
         transitions: {},
@@ -211,9 +210,8 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
         .withDuration(ctx.config.enterDuration)
         .withEasing(ctx.config.enterEasing)
         .onComplete(() {
-          // Animation will trigger complete event via external callback
-        })
-        .build();
+      // Animation will trigger complete event via external callback
+    }).build();
 
     ctx.currentAnimation!.play();
   }
@@ -229,9 +227,8 @@ class ListItemStateMachine extends KitoStateMachine<ListItemState, ListItemEvent
         .withDuration(ctx.config.exitDuration)
         .withEasing(ctx.config.exitEasing)
         .onComplete(() {
-          // Animation will trigger complete event via external callback
-        })
-        .build();
+      // Animation will trigger complete event via external callback
+    }).build();
 
     ctx.currentAnimation!.play();
   }

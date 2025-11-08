@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
 import 'package:kito_reactive/kito_reactive.dart';
 import '../widgets/demo_scaffold.dart';
 import '../widgets/demo_card.dart';
-import '../widgets/reactive_builder.dart';
 
 class PrimitivesDemoScreen extends StatelessWidget {
   const PrimitivesDemoScreen({super.key});
@@ -1308,7 +1307,7 @@ class _YoyoDemo extends StatefulWidget {
   State<_YoyoDemo> createState() => _YoyoDemoState();
 }
 
-class _YoyoDemoState extends State<_YoyoDemoState> {
+class _YoyoDemoState extends State<_YoyoDemo> {
   late final offsetX = animatableDouble(0.0);
 
   void _trigger() {

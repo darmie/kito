@@ -4,21 +4,21 @@ import 'package:kito_reactive/kito_reactive.dart';
 
 /// Drag-and-shuffle states for reorderable items
 enum DragShuffleState {
-  idle,      // Not dragging
-  dragging,  // Item being dragged
-  hovering,  // Dragged item hovering over drop target
-  dropping,  // Item being dropped
+  idle, // Not dragging
+  dragging, // Item being dragged
+  hovering, // Dragged item hovering over drop target
+  dropping, // Item being dropped
   animating, // Items animating to new positions
 }
 
 /// Drag-and-shuffle events
 enum DragShuffleEvent {
-  startDrag,     // Start dragging an item
-  updateDrag,    // Drag position updated
-  hoverTarget,   // Dragging over a new target position
-  drop,          // Drop item
-  animComplete,  // Animation completed
-  reset,         // Reset to idle
+  startDrag, // Start dragging an item
+  updateDrag, // Drag position updated
+  hoverTarget, // Dragging over a new target position
+  drop, // Drop item
+  animComplete, // Animation completed
+  reset, // Reset to idle
 }
 
 /// Configuration for drag-and-shuffle animations
@@ -222,7 +222,7 @@ class DragShuffleController {
         .to(item.rotation, config.dragRotation)
         .to(item.elevation, config.dragElevation)
         .withDuration(200)
-        .withEasing(Easing.easeOut)
+        .withEasing(Easing.easeOutSine)
         .build()
       ..play();
   }
@@ -341,8 +341,8 @@ class DragShuffleController {
 
 /// Simplified state machine for individual drag item
 /// (The controller manages the overall drag-shuffle logic)
-class DragItemStateMachine
-    extends KitoStateMachine<DragShuffleState, DragShuffleEvent, DragItemContext> {
+class DragItemStateMachine extends KitoStateMachine<DragShuffleState,
+    DragShuffleEvent, DragItemContext> {
   DragItemStateMachine(DragItemContext context)
       : super(
           initial: DragShuffleState.idle,
@@ -352,7 +352,8 @@ class DragItemStateMachine
           context: context,
         );
 
-  static Map<DragShuffleState, StateConfig<DragShuffleState, DragShuffleEvent, DragItemContext>>
+  static Map<DragShuffleState,
+          StateConfig<DragShuffleState, DragShuffleEvent, DragItemContext>>
       _buildStates() {
     return {
       // IDLE STATE

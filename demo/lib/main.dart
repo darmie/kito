@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 
@@ -27,7 +27,7 @@ class KitoDemoApp extends StatelessWidget {
           onBackground: Color(0xFF1A1A1A),
         ),
         textTheme: GoogleFonts.ibmPlexMonoTextTheme(),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(2)),
@@ -47,7 +47,7 @@ class KitoDemoApp extends StatelessWidget {
           onBackground: Color(0xFFE0E0E0),
         ),
         textTheme: GoogleFonts.ibmPlexMonoTextTheme(ThemeData.dark().textTheme),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(2)),

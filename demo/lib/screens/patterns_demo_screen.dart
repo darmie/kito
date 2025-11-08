@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing, FormState;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
-import '../widgets/reactive_builder.dart';
 import '../widgets/demo_card.dart';
 
 class PatternsDemoScreen extends StatelessWidget {
@@ -59,20 +58,20 @@ class _ButtonPatternDemoState extends State<_ButtonPatternDemo> {
   void _trigger() {
     // Reset
     clickCount = 0;
-    buttonFsm.dispatch(ButtonEvent.enable);
+    buttonFsm.send(ButtonEvent.enable);
 
     // Simulate button interactions
     Future.delayed(const Duration(milliseconds: 100), () {
-      buttonFsm.dispatch(ButtonEvent.pressDown);
+      buttonFsm.send(ButtonEvent.pressDown);
     });
     Future.delayed(const Duration(milliseconds: 300), () {
-      buttonFsm.dispatch(ButtonEvent.pressUp);
+      buttonFsm.send(ButtonEvent.pressUp);
     });
     Future.delayed(const Duration(milliseconds: 800), () {
-      buttonFsm.dispatch(ButtonEvent.startLoading);
+      buttonFsm.send(ButtonEvent.startLoading);
     });
     Future.delayed(const Duration(milliseconds: 2000), () {
-      buttonFsm.dispatch(ButtonEvent.stopLoading);
+      buttonFsm.send(ButtonEvent.stopLoading);
     });
   }
 
@@ -103,12 +102,12 @@ fsm.dispatch(ButtonEvent.startLoading);''',
           children: [
             ReactiveBuilder(
               builder: (_) => MouseRegion(
-                onEnter: (_) => buttonFsm.dispatch(ButtonEvent.hoverEnter),
-                onExit: (_) => buttonFsm.dispatch(ButtonEvent.hoverExit),
+                onEnter: (_) => buttonFsm.send(ButtonEvent.hoverEnter),
+                onExit: (_) => buttonFsm.send(ButtonEvent.hoverExit),
                 child: GestureDetector(
-                  onTapDown: (_) => buttonFsm.dispatch(ButtonEvent.pressDown),
-                  onTapUp: (_) => buttonFsm.dispatch(ButtonEvent.pressUp),
-                  onTapCancel: () => buttonFsm.dispatch(ButtonEvent.enable),
+                  onTapDown: (_) => buttonFsm.send(ButtonEvent.pressDown),
+                  onTapUp: (_) => buttonFsm.send(ButtonEvent.pressUp),
+                  onTapCancel: () => buttonFsm.send(ButtonEvent.enable),
                   child: Transform.scale(
                     scale: buttonContext.scale.value,
                     child: Opacity(
@@ -128,7 +127,8 @@ fsm.dispatch(ButtonEvent.startLoading);''',
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  valueColor:
+                                      AlwaysStoppedAnimation(Colors.white),
                                 ),
                               )
                             : const Text(
@@ -147,7 +147,7 @@ fsm.dispatch(ButtonEvent.startLoading);''',
             const SizedBox(height: 16),
             ReactiveBuilder(
               builder: (_) => Text(
-                'State: ${buttonFsm.currentState.name}',
+                'State: ${buttonFsm.currentState.value.name}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -185,10 +185,10 @@ class _FormPatternDemoState extends State<_FormPatternDemo> {
         // Simulate async submission
         Future.delayed(const Duration(seconds: 1), () {
           if (_controller.text.length >= 3) {
-            formFsm.dispatch(FormEvent.submitSuccess);
+            formFsm.send(FormEvent.submitSuccess);
           } else {
             formContext.errorMessage = 'Submission failed';
-            formFsm.dispatch(FormEvent.submitError);
+            formFsm.send(FormEvent.submitError);
           }
         });
       },
@@ -199,29 +199,29 @@ class _FormPatternDemoState extends State<_FormPatternDemo> {
   void _trigger() {
     // Reset
     _controller.text = '';
-    formFsm.dispatch(FormEvent.reset);
+    formFsm.send(FormEvent.reset);
 
     // Simulate form flow
     Future.delayed(const Duration(milliseconds: 500), () {
       _controller.text = 'ab'; // Too short
-      formFsm.dispatch(FormEvent.validate);
+      formFsm.send(FormEvent.validate);
     });
 
     Future.delayed(const Duration(milliseconds: 700), () {
-      formFsm.dispatch(FormEvent.validationFailed);
+      formFsm.send(FormEvent.validationFailed);
     });
 
     Future.delayed(const Duration(milliseconds: 1500), () {
       _controller.text = 'valid input';
-      formFsm.dispatch(FormEvent.validate);
+      formFsm.send(FormEvent.validate);
     });
 
     Future.delayed(const Duration(milliseconds: 1700), () {
-      formFsm.dispatch(FormEvent.validationPassed);
+      formFsm.send(FormEvent.validationPassed);
     });
 
     Future.delayed(const Duration(milliseconds: 2200), () {
-      formFsm.dispatch(FormEvent.submit);
+      formFsm.send(FormEvent.submit);
     });
   }
 
@@ -307,7 +307,7 @@ fsm.dispatch(FormEvent.submit);''',
                       style: const TextStyle(fontSize: 14),
                       onChanged: (_) {
                         if (formFsm.currentState == FormState.invalid) {
-                          formFsm.dispatch(FormEvent.input);
+                          formFsm.send(FormEvent.input);
                         }
                       },
                     ),
@@ -317,7 +317,7 @@ fsm.dispatch(FormEvent.submit);''',
               const SizedBox(height: 12),
               ReactiveBuilder(
                 builder: (_) => Text(
-                  'State: ${formFsm.currentState.name}',
+                  'State: ${formFsm.currentState.value.name}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -351,9 +351,9 @@ class _DrawerPatternDemoState extends State<_DrawerPatternDemo> {
   }
 
   void _trigger() {
-    drawerFsm.dispatch(DrawerEvent.toggle);
+    drawerFsm.send(DrawerEvent.toggle);
     Future.delayed(const Duration(milliseconds: 1500), () {
-      drawerFsm.dispatch(DrawerEvent.toggle);
+      drawerFsm.send(DrawerEvent.toggle);
     });
   }
 
@@ -391,7 +391,10 @@ fsm.dispatch(DrawerEvent.toggle);''',
                       color: Theme.of(context).colorScheme.background,
                       borderRadius: BorderRadius.circular(2),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.2),
                       ),
                     ),
                     child: Center(
@@ -406,7 +409,7 @@ fsm.dispatch(DrawerEvent.toggle);''',
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'State: ${drawerFsm.currentState.name}',
+                            'State: ${drawerFsm.currentState.value.name}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -432,7 +435,10 @@ fsm.dispatch(DrawerEvent.toggle);''',
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.2),
                       ),
                     ),
                     padding: const EdgeInsets.all(16),
@@ -522,9 +528,9 @@ class _ModalPatternDemoState extends State<_ModalPatternDemo> {
   }
 
   void _trigger() {
-    modalFsm.dispatch(ModalEvent.show);
+    modalFsm.send(ModalEvent.show);
     Future.delayed(const Duration(milliseconds: 1500), () {
-      modalFsm.dispatch(ModalEvent.hide);
+      modalFsm.send(ModalEvent.hide);
     });
   }
 
@@ -588,7 +594,8 @@ fsm.dispatch(ModalEvent.hide);''',
                                   color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(2),
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                     width: 2,
                                   ),
                                 ),
@@ -599,12 +606,15 @@ fsm.dispatch(ModalEvent.hide);''',
                                     const SizedBox(height: 12),
                                     Text(
                                       'Modal Dialog',
-                                      style: Theme.of(context).textTheme.titleSmall,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       currentType.name,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
                                     ),
                                   ],
                                 ),
@@ -806,14 +816,21 @@ Future.delayed(Duration(seconds: 2), () {
                         Icon(
                           Icons.notifications_none,
                           size: 48,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.3),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'No notifications',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.5),
+                                  ),
                         ),
                       ],
                     ),
@@ -869,7 +886,8 @@ Future.delayed(Duration(seconds: 2), () {
             child: GestureDetector(
               onTap: () => _dismissToast(toast),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   color: toast.color.withOpacity(0.9),

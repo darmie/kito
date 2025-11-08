@@ -189,7 +189,8 @@ class DragShuffleGridController {
     item.offsetY.value = offsetY;
 
     // Calculate which grid cell the drag is over
-    final draggedOverIndex = _calculateGridIndexFromOffset(index, offsetX, offsetY);
+    final draggedOverIndex =
+        _calculateGridIndexFromOffset(index, offsetX, offsetY);
 
     if (draggedOverIndex != null && draggedOverIndex != _targetIndex) {
       updateTargetPosition(draggedOverIndex);
@@ -197,7 +198,8 @@ class DragShuffleGridController {
   }
 
   /// Calculate which grid index is being dragged over
-  int? _calculateGridIndexFromOffset(int draggedIndex, double offsetX, double offsetY) {
+  int? _calculateGridIndexFromOffset(
+      int draggedIndex, double offsetX, double offsetY) {
     final item = items[draggedIndex];
     final currentRow = item.originalRow;
     final currentCol = item.originalCol;
@@ -210,8 +212,10 @@ class DragShuffleGridController {
     final newY = currentY + offsetY;
 
     // Convert to grid coordinates
-    final newCol = (newX / config.itemWidthWithGap).round().clamp(0, config.columns - 1);
-    final newRow = (newY / config.itemHeightWithGap).round().clamp(0, rowCount - 1);
+    final newCol =
+        (newX / config.itemWidthWithGap).round().clamp(0, config.columns - 1);
+    final newRow =
+        (newY / config.itemHeightWithGap).round().clamp(0, rowCount - 1);
 
     final newIndex = config.indexFromRowCol(newRow, newCol);
 
@@ -273,7 +277,7 @@ class DragShuffleGridController {
         .to(item.rotation, config.dragRotation)
         .to(item.elevation, config.dragElevation)
         .withDuration(200)
-        .withEasing(Easing.easeOut)
+        .withEasing(Easing.easeOutSine)
         .build()
       ..play();
   }
@@ -296,7 +300,11 @@ class DragShuffleGridController {
       item.currentAnimation = animate()
           .to(item.offsetX, displacement.dx)
           .to(item.offsetY, displacement.dy)
-          .to(item.scale, displacement.dx != 0 || displacement.dy != 0 ? config.displaceScale : 1.0)
+          .to(
+              item.scale,
+              displacement.dx != 0 || displacement.dy != 0
+                  ? config.displaceScale
+                  : 1.0)
           .withDelay(delay)
           .withDuration(config.repositionDuration)
           .withEasing(config.repositionEasing)
@@ -376,7 +384,8 @@ class DragShuffleGridController {
 
   /// Calculate grid distance (Manhattan distance)
   int _gridDistance(GridItemContext a, GridItemContext b) {
-    return (a.originalRow - b.originalRow).abs() + (a.originalCol - b.originalCol).abs();
+    return (a.originalRow - b.originalRow).abs() +
+        (a.originalCol - b.originalCol).abs();
   }
 
   /// Calculate Euclidean distance

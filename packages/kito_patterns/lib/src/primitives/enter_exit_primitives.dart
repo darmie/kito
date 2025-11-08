@@ -23,7 +23,7 @@ class FadeConfig {
     this.fromOpacity = 0.0,
     this.toOpacity = 1.0,
     this.duration = 300,
-    this.easing = Easing.easeOut,
+    this.easing = Easing.easeOutSine,
   });
 
   static const FadeConfig quick = FadeConfig(duration: 150);
@@ -49,12 +49,13 @@ KitoAnimation fadeOut(
   Animatable<double> opacity, {
   FadeConfig? config,
 }) {
-  final cfg = config ?? FadeConfig(
-    fromOpacity: opacity.value,
-    toOpacity: 0.0,
-    duration: 300,
-    easing: Easing.easeIn,
-  );
+  final cfg = config ??
+      FadeConfig(
+        fromOpacity: opacity.value,
+        toOpacity: 0.0,
+        duration: 300,
+        easing: Easing.easeInSine,
+      );
 
   return animate()
       .to(opacity, cfg.toOpacity)
@@ -85,7 +86,8 @@ class SlideConfig {
   });
 
   static const SlideConfig quick = SlideConfig(duration: 200);
-  static const SlideConfig smooth = SlideConfig(duration: 400, easing: Easing.easeInOutCubic);
+  static const SlideConfig smooth =
+      SlideConfig(duration: 400, easing: Easing.easeInOutCubic);
 }
 
 /// Atomic slide in from right
@@ -222,8 +224,10 @@ class ScaleConfig {
   });
 
   static const ScaleConfig quick = ScaleConfig(duration: 200);
-  static const ScaleConfig smooth = ScaleConfig(duration: 400, easing: Easing.easeOutCubic);
-  static const ScaleConfig elastic = ScaleConfig(duration: 500, easing: Easing.easeOutElastic);
+  static const ScaleConfig smooth =
+      ScaleConfig(duration: 400, easing: Easing.easeOutCubic);
+  static const ScaleConfig elastic =
+      ScaleConfig(duration: 500, easing: Easing.easeOutElastic);
 }
 
 /// Atomic scale in (grow)
@@ -245,12 +249,13 @@ KitoAnimation scaleOut(
   Animatable<double> scale, {
   ScaleConfig? config,
 }) {
-  final cfg = config ?? ScaleConfig(
-    fromScale: scale.value,
-    toScale: 0.0,
-    duration: 300,
-    easing: Easing.easeInBack,
-  );
+  final cfg = config ??
+      ScaleConfig(
+        fromScale: scale.value,
+        toScale: 0.0,
+        duration: 300,
+        easing: Easing.easeInBack,
+      );
 
   return animate()
       .to(scale, cfg.toScale)
@@ -291,7 +296,8 @@ KitoAnimation rotateIn(
   RotateConfig? config,
 }) {
   rotation.value = fromDegrees;
-  final cfg = config ?? RotateConfig(fromRotation: fromDegrees, toRotation: 0.0);
+  final cfg =
+      config ?? RotateConfig(fromRotation: fromDegrees, toRotation: 0.0);
 
   return animate()
       .to(rotation, cfg.toRotation)
@@ -306,7 +312,8 @@ KitoAnimation rotateOut(
   double toDegrees = 180.0,
   RotateConfig? config,
 }) {
-  final cfg = config ?? RotateConfig(fromRotation: rotation.value, toRotation: toDegrees);
+  final cfg = config ??
+      RotateConfig(fromRotation: rotation.value, toRotation: toDegrees);
 
   return animate()
       .to(rotation, cfg.toRotation)
@@ -326,7 +333,7 @@ KitoAnimation blurIn(
   return animate()
       .to(blur, 0.0)
       .withDuration(duration)
-      .withEasing(Easing.easeOut)
+      .withEasing(Easing.easeOutSine)
       .build();
 }
 
@@ -339,7 +346,7 @@ KitoAnimation blurOut(
   return animate()
       .to(blur, toBlur)
       .withDuration(duration)
-      .withEasing(Easing.easeIn)
+      .withEasing(Easing.easeInSine)
       .build();
 }
 
@@ -470,7 +477,7 @@ KitoAnimation flipIn(
       ])
       .to(opacity, 1.0)
       .withDuration(duration)
-      .withEasing(Easing.easeOut)
+      .withEasing(Easing.easeOutSine)
       .build();
 }
 
@@ -489,7 +496,7 @@ KitoAnimation flipOut(
       ])
       .to(opacity, 0.0)
       .withDuration(duration)
-      .withEasing(Easing.easeIn)
+      .withEasing(Easing.easeInSine)
       .build();
 }
 
@@ -510,7 +517,7 @@ KitoAnimation zoomIn(
       ])
       .to(opacity, 1.0)
       .withDuration(duration)
-      .withEasing(Easing.easeOut)
+      .withEasing(Easing.easeOutSine)
       .build();
 }
 
@@ -528,6 +535,6 @@ KitoAnimation zoomOut(
       ])
       .to(opacity, 0.0)
       .withDuration(duration)
-      .withEasing(Easing.easeIn)
+      .withEasing(Easing.easeInSine)
       .build();
 }

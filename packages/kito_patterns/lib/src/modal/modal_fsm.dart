@@ -1,31 +1,32 @@
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 
 /// Modal/Dialog states
 enum ModalState {
-  hidden,    // Modal is not visible
-  showing,   // Modal is appearing
-  visible,   // Modal is fully visible
-  hiding,    // Modal is disappearing
+  hidden, // Modal is not visible
+  showing, // Modal is appearing
+  visible, // Modal is fully visible
+  hiding, // Modal is disappearing
 }
 
 /// Modal events
 enum ModalEvent {
-  show,      // Show modal
-  hide,      // Hide modal
-  complete,  // Animation complete (internal)
+  show, // Show modal
+  hide, // Hide modal
+  complete, // Animation complete (internal)
 }
 
 /// Modal animation type
 enum ModalAnimationType {
-  fade,          // Simple fade in/out
-  scale,         // Scale from center
-  slideUp,       // Slide up from bottom
-  slideDown,     // Slide down from top
-  slideLeft,     // Slide in from left
-  slideRight,    // Slide in from right
-  bounce,        // Bounce in
-  zoom,          // Zoom in from background
+  fade, // Simple fade in/out
+  scale, // Scale from center
+  slideUp, // Slide up from bottom
+  slideDown, // Slide down from top
+  slideLeft, // Slide in from left
+  slideRight, // Slide in from right
+  bounce, // Bounce in
+  zoom, // Zoom in from background
 }
 
 /// Modal animation configuration
@@ -134,7 +135,8 @@ class ModalContext {
 }
 
 /// Modal state machine
-class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalContext> {
+class ModalStateMachine
+    extends KitoStateMachine<ModalState, ModalEvent, ModalContext> {
   ModalStateMachine(ModalContext context)
       : super(
           initial: ModalState.hidden,
@@ -144,7 +146,8 @@ class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalCo
           context: context,
         );
 
-  static Map<ModalState, StateConfig<ModalState, ModalEvent, ModalContext>> _buildStates() {
+  static Map<ModalState, StateConfig<ModalState, ModalEvent, ModalContext>>
+      _buildStates() {
     return {
       ModalState.hidden: StateConfig(
         state: ModalState.hidden,
@@ -158,7 +161,6 @@ class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalCo
           ),
         },
       ),
-
       ModalState.showing: StateConfig(
         state: ModalState.showing,
         transitions: {
@@ -178,7 +180,6 @@ class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalCo
           ),
         },
       ),
-
       ModalState.visible: StateConfig(
         state: ModalState.visible,
         transitions: {
@@ -191,7 +192,6 @@ class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalCo
           ),
         },
       ),
-
       ModalState.hiding: StateConfig(
         state: ModalState.hiding,
         transitions: {
@@ -239,7 +239,11 @@ class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalCo
     ctx.currentAnimation = animate()
         .to(ctx.opacity, 0.0)
         .to(ctx.scale, ctx.config.initialScale)
-        .to(ctx.offsetY, ctx.config.type == ModalAnimationType.slideUp ? ctx.config.slideDistance : 0.0)
+        .to(
+            ctx.offsetY,
+            ctx.config.type == ModalAnimationType.slideUp
+                ? ctx.config.slideDistance
+                : 0.0)
         .to(ctx.backdropOpacity, 0.0)
         .withDuration(ctx.config.hideDuration)
         .withEasing(ctx.config.hideEasing)
@@ -300,8 +304,8 @@ class ModalStateMachine extends KitoStateMachine<ModalState, ModalEvent, ModalCo
         .to(ctx.opacity, 1.0)
         .withKeyframes(ctx.scale, [
           Keyframe(value: 0.0, offset: 0.0),
-          Keyframe(value: 1.1, offset: 0.7, easing: Easing.easeOut),
-          Keyframe(value: 1.0, offset: 1.0, easing: Easing.easeInOut),
+          Keyframe(value: 1.1, offset: 0.7, easing: Easing.easeOutCubic),
+          Keyframe(value: 1.0, offset: 1.0, easing: Easing.easeInOutCubic),
         ])
         .to(ctx.backdropOpacity, ctx.config.backdropOpacity)
         .withDuration(ctx.config.showDuration)

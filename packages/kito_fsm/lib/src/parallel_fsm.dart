@@ -1,11 +1,12 @@
 import 'dart:async';
+import 'package:kito_reactive/kito_reactive.dart';
 import 'runtime/state_machine.dart';
 
 /// Represents an orthogonal region in a parallel state machine
 ///
 /// Each region runs independently with its own states and transitions.
 /// Regions can communicate through shared context or event broadcasting.
-class ParallelRegion<S, E, C> {
+class ParallelRegion<S extends Enum, E extends Enum, C> {
   /// Unique identifier for this region
   final String id;
 
@@ -21,13 +22,13 @@ class ParallelRegion<S, E, C> {
     this.isActive = true,
   });
 
-  /// Get current state of this region
-  S get currentState => stateMachine.currentState;
+  /// Get current state signal of this region
+  Signal<S> get currentState => stateMachine.currentState;
 
   /// Dispatch event to this region
   void dispatch(E event) {
     if (isActive) {
-      stateMachine.dispatch(event);
+      stateMachine.send(event);
     }
   }
 
@@ -103,7 +104,7 @@ class ParallelConfig {
 /// // Or send to specific region
 /// parallelFsm.sendToRegion('player', PlayerEvent.moveLeft);
 /// ```
-class ParallelStateMachine<S, E, C> {
+class ParallelStateMachine<S extends Enum, E extends Enum, C> {
   /// All regions in this parallel state machine
   final List<ParallelRegion<S, E, C>> regions;
 
@@ -131,8 +132,9 @@ class ParallelStateMachine<S, E, C> {
   /// Set up callbacks for each region to track state changes
   void _setupRegionCallbacks() {
     for (final region in regions) {
-      // Monitor state changes in each region
-      region.stateMachine.onStateChange((newState) {
+      // Monitor state changes in each region using reactive effects
+      effect(() {
+        final newState = region.stateMachine.currentState.value;
         _notifyStateChange(region.id, newState);
         _checkSyncConditions();
       });
@@ -152,14 +154,14 @@ class ParallelStateMachine<S, E, C> {
   List<ParallelRegion<S, E, C>> get activeRegions =>
       regions.where((r) => r.isActive).toList();
 
-  /// Get current state of a specific region
-  S? getRegionState(String regionId) {
+  /// Get current state signal of a specific region
+  Signal<S>? getRegionState(String regionId) {
     final region = getRegion(regionId);
     return region?.currentState;
   }
 
-  /// Get current states of all regions
-  Map<String, S> getAllStates() {
+  /// Get current state signals of all regions
+  Map<String, Signal<S>> getAllStates() {
     return Map.fromEntries(
       regions.map((r) => MapEntry(r.id, r.currentState)),
     );
@@ -268,7 +270,7 @@ class ParallelStateMachine<S, E, C> {
     void checkConditions(String regionId, S newState) {
       for (final entry in conditions.entries) {
         final regionState = getRegionState(entry.key);
-        if (regionState != entry.value) {
+        if (regionState?.value != entry.value) {
           return; // Not all conditions met yet
         }
       }
@@ -279,7 +281,7 @@ class ParallelStateMachine<S, E, C> {
     onAnyStateChange(checkConditions);
 
     // Check immediately in case conditions already met
-    checkConditions('', regions.first.currentState);
+    checkConditions('', regions.first.currentState.value);
 
     return completer.future;
   }
@@ -288,7 +290,7 @@ class ParallelStateMachine<S, E, C> {
   bool areRegionsInStates(Map<String, S> states) {
     for (final entry in states.entries) {
       final regionState = getRegionState(entry.key);
-      if (regionState != entry.value) {
+      if (regionState?.value != entry.value) {
         return false;
       }
     }
@@ -347,7 +349,9 @@ class ParallelStateMachine<S, E, C> {
   }
 
   void _setupCallbacksForRegion(ParallelRegion<S, E, C> region) {
-    region.stateMachine.onStateChange((newState) {
+    // Monitor state changes using reactive effects
+    effect(() {
+      final newState = region.stateMachine.currentState.value;
       _notifyStateChange(region.id, newState);
       _checkSyncConditions();
     });
@@ -380,7 +384,7 @@ class ParallelFSMHelper {
   /// Create a fork-join pattern
   ///
   /// Useful for parallel task execution that must complete before proceeding.
-  static Future<void> forkJoin<S, E, C>(
+  static Future<void> forkJoin<S extends Enum, E extends Enum, C>(
     List<ParallelRegion<S, E, C>> regions,
     Map<String, S> joinConditions,
   ) async {
@@ -399,7 +403,7 @@ class ParallelFSMHelper {
   /// Create a broadcast pattern
   ///
   /// All regions receive all events and react independently.
-  static ParallelStateMachine<S, E, C> createBroadcast<S, E, C>(
+  static ParallelStateMachine<S, E, C> createBroadcast<S extends Enum, E extends Enum, C>(
     List<ParallelRegion<S, E, C>> regions,
   ) {
     return ParallelStateMachine(
@@ -411,7 +415,7 @@ class ParallelFSMHelper {
   /// Create an isolated pattern
   ///
   /// Each region must be targeted explicitly for events.
-  static ParallelStateMachine<S, E, C> createIsolated<S, E, C>(
+  static ParallelStateMachine<S, E, C> createIsolated<S extends Enum, E extends Enum, C>(
     List<ParallelRegion<S, E, C>> regions,
   ) {
     return ParallelStateMachine(

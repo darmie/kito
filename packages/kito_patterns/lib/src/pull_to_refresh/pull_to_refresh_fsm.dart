@@ -116,10 +116,17 @@ class PullToRefreshContext {
   /// Flag to track if threshold was crossed
   bool thresholdCrossed = false;
 
+  /// Reference to the state machine (set after construction)
+  PullToRefreshStateMachine? _stateMachine;
+
   PullToRefreshContext({
     required this.config,
     required this.onRefresh,
   });
+
+  void _setStateMachine(PullToRefreshStateMachine machine) {
+    _stateMachine = machine;
+  }
 }
 
 /// Pull-to-refresh state machine
@@ -132,7 +139,9 @@ class PullToRefreshStateMachine
             states: _buildStates(),
           ),
           context: context,
-        );
+        ) {
+    context._setStateMachine(this);
+  }
 
   static Map<PullToRefreshState, StateConfig<PullToRefreshState, PullToRefreshEvent, PullToRefreshContext>>
       _buildStates() {
@@ -222,8 +231,8 @@ class PullToRefreshStateMachine
               if (anim != null && anim.currentState.value == AnimState.completed) {
                 // Auto-transition to idle when release animation completes
                 Future.microtask(() {
-                  if (currentState.value == PullToRefreshState.releasing) {
-                    send(PullToRefreshEvent.reset);
+                  if (ctx._stateMachine?.currentState.value == PullToRefreshState.releasing) {
+                    ctx._stateMachine?.send(PullToRefreshEvent.reset);
                   }
                 });
               }
@@ -250,8 +259,8 @@ class PullToRefreshStateMachine
 
           // Execute refresh callback
           ctx.onRefresh().then((_) {
-            if (currentState.value == PullToRefreshState.refreshing) {
-              send(PullToRefreshEvent.complete);
+            if (ctx._stateMachine?.currentState.value == PullToRefreshState.refreshing) {
+              ctx._stateMachine?.send(PullToRefreshEvent.complete);
             }
           });
         },
@@ -276,8 +285,8 @@ class PullToRefreshStateMachine
               if (anim != null && anim.currentState.value == AnimState.completed) {
                 // Auto-transition to idle when complete animation finishes
                 Future.microtask(() {
-                  if (currentState.value == PullToRefreshState.complete) {
-                    send(PullToRefreshEvent.reset);
+                  if (ctx._stateMachine?.currentState.value == PullToRefreshState.complete) {
+                    ctx._stateMachine?.send(PullToRefreshEvent.reset);
                   }
                 });
               }
@@ -332,7 +341,7 @@ class PullToRefreshStateMachine
     ctx.currentAnimation = animate()
         .to(ctx.opacity, ctx.config.activeOpacity)
         .withDuration(200)
-        .withEasing(Easing.easeOut)
+        .withEasing(Easing.easeOutCubic)
         .build()
       ..play();
   }
@@ -366,7 +375,7 @@ class PullToRefreshStateMachine
     ctx.currentAnimation = animate()
         .to(ctx.pullDistance, ctx.config.threshold)
         .withDuration(200)
-        .withEasing(Easing.easeOut)
+        .withEasing(Easing.easeOutCubic)
         .build()
       ..play();
   }

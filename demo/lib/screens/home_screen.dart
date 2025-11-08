@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'primitives_demo_screen.dart';
 import 'patterns_demo_screen.dart';
 import 'interactive_demo_screen.dart';
@@ -12,112 +12,109 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(48.0),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.animation,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Kito Animation System',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Declarative state machines & reactive animations for Flutter',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.6),
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(48.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.animation,
+                    size: 80,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Kito Animation System',
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Declarative state machines & reactive animations for Flutter',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
+            ),
 
-              // Demo categories
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: GridView.count(
-                      padding: const EdgeInsets.all(24),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 24,
-                      crossAxisSpacing: 24,
-                      childAspectRatio: 1.5,
-                      shrinkWrap: true,
-                      children: [
-                        _DemoCard(
-                          title: 'Atomic Primitives',
-                          description:
-                              'Motion, enter/exit, and timing primitives',
-                          icon: Icons.widgets,
-                          color: const Color(0xFF8B4513), // Reddish-brown
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PrimitivesDemoScreen(),
-                            ),
+            // Demo categories
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: GridView.count(
+                    padding: const EdgeInsets.all(24),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 24,
+                    crossAxisSpacing: 24,
+                    childAspectRatio: 1.5,
+                    shrinkWrap: true,
+                    children: [
+                      _DemoCard(
+                        title: 'Atomic Primitives',
+                        description:
+                            'Motion, enter/exit, and timing primitives',
+                        icon: Icons.widgets,
+                        color: const Color(0xFF8B4513), // Reddish-brown
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PrimitivesDemoScreen(),
                           ),
                         ),
-                        _DemoCard(
-                          title: 'UI Patterns',
-                          description:
-                              'Button, form, drawer, modal, and more',
-                          icon: Icons.dashboard_customize,
-                          color: const Color(0xFFD2691E), // Cardboard brown
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PatternsDemoScreen(),
-                            ),
+                      ),
+                      _DemoCard(
+                        title: 'UI Patterns',
+                        description: 'Button, form, drawer, modal, and more',
+                        icon: Icons.dashboard_customize,
+                        color: const Color(0xFFD2691E), // Cardboard brown
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PatternsDemoScreen(),
                           ),
                         ),
-                        _DemoCard(
-                          title: 'Interactive Patterns',
-                          description:
-                              'Drag-to-refresh, reorderable lists & grids',
-                          icon: Icons.touch_app,
-                          color: const Color(0xFF6B6B6B), // Gray
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const InteractiveDemoScreen(),
-                            ),
+                      ),
+                      _DemoCard(
+                        title: 'Interactive Patterns',
+                        description:
+                            'Drag-to-refresh, reorderable lists & grids',
+                        icon: Icons.touch_app,
+                        color: const Color(0xFF6B6B6B), // Gray
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const InteractiveDemoScreen(),
                           ),
                         ),
-                        _DemoCard(
-                          title: 'Complex Compositions',
-                          description:
-                              'Combining primitives & patterns',
-                          icon: Icons.auto_awesome,
-                          color: const Color(0xFF4A4A4A), // Dark gray
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CompositionsDemoScreen(),
-                            ),
+                      ),
+                      _DemoCard(
+                        title: 'Complex Compositions',
+                        description: 'Combining primitives & patterns',
+                        icon: Icons.auto_awesome,
+                        color: const Color(0xFF4A4A4A), // Dark gray
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CompositionsDemoScreen(),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

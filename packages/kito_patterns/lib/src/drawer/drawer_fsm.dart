@@ -1,20 +1,21 @@
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 
 /// Drawer states
 enum DrawerState {
-  closed,    // Drawer is closed
-  opening,   // Drawer is opening
-  open,      // Drawer is fully open
-  closing,   // Drawer is closing
+  closed, // Drawer is closed
+  opening, // Drawer is opening
+  open, // Drawer is fully open
+  closing, // Drawer is closing
 }
 
 /// Drawer events
 enum DrawerEvent {
-  open,      // Open drawer
-  close,     // Close drawer
-  toggle,    // Toggle drawer state
-  complete,  // Animation complete (internal)
+  open, // Open drawer
+  close, // Close drawer
+  toggle, // Toggle drawer state
+  complete, // Animation complete (internal)
 }
 
 /// Drawer animation configuration
@@ -61,7 +62,7 @@ class DrawerAnimationConfig {
   static const DrawerAnimationConfig snappy = DrawerAnimationConfig(
     openDuration: 200,
     closeDuration: 150,
-    openEasing: Easing.easeOut,
+    openEasing: Easing.easeOutSine,
   );
 
   /// Bouncy animation
@@ -77,9 +78,10 @@ class DrawerContext {
   final DrawerAnimationConfig config;
 
   // Animation properties
-  final AnimatableProperty<double> position;    // 0.0 (closed) to 1.0 (open)
+  final AnimatableProperty<double> position; // 0.0 (closed) to 1.0 (open)
   final AnimatableProperty<double> overlayOpacity;
-  final AnimatableProperty<double> contentScale; // Scale content when drawer opens
+  final AnimatableProperty<double>
+      contentScale; // Scale content when drawer opens
 
   KitoAnimation? currentAnimation;
   VoidCallback? onOpen;
@@ -95,7 +97,8 @@ class DrawerContext {
 }
 
 /// Drawer state machine
-class DrawerStateMachine extends KitoStateMachine<DrawerState, DrawerEvent, DrawerContext> {
+class DrawerStateMachine
+    extends KitoStateMachine<DrawerState, DrawerEvent, DrawerContext> {
   DrawerStateMachine(DrawerContext context)
       : super(
           initial: DrawerState.closed,
@@ -105,7 +108,8 @@ class DrawerStateMachine extends KitoStateMachine<DrawerState, DrawerEvent, Draw
           context: context,
         );
 
-  static Map<DrawerState, StateConfig<DrawerState, DrawerEvent, DrawerContext>> _buildStates() {
+  static Map<DrawerState, StateConfig<DrawerState, DrawerEvent, DrawerContext>>
+      _buildStates() {
     return {
       DrawerState.closed: StateConfig(
         state: DrawerState.closed,
@@ -126,7 +130,6 @@ class DrawerStateMachine extends KitoStateMachine<DrawerState, DrawerEvent, Draw
           ),
         },
       ),
-
       DrawerState.opening: StateConfig(
         state: DrawerState.opening,
         transitions: {
@@ -146,7 +149,6 @@ class DrawerStateMachine extends KitoStateMachine<DrawerState, DrawerEvent, Draw
           ),
         },
       ),
-
       DrawerState.open: StateConfig(
         state: DrawerState.open,
         transitions: {
@@ -166,7 +168,6 @@ class DrawerStateMachine extends KitoStateMachine<DrawerState, DrawerEvent, Draw
           ),
         },
       ),
-
       DrawerState.closing: StateConfig(
         state: DrawerState.closing,
         transitions: {

@@ -74,8 +74,14 @@ List<KitoAnimation> createDramaticEntrance({
     animate()
         .withKeyframes(scale, [
           Keyframe(value: 0.0, offset: 0.0),
-          Keyframe(value: config.finalScale * 1.1, offset: 0.7, easing: Easing.easeOutCubic),
-          Keyframe(value: config.finalScale, offset: 1.0, easing: Easing.easeInOut),
+          Keyframe(
+              value: config.finalScale * 1.1,
+              offset: 0.7,
+              easing: Easing.easeOutCubic),
+          Keyframe(
+              value: config.finalScale,
+              offset: 1.0,
+              easing: Easing.easeInOutSine),
         ])
         .withDuration(config.duration)
         .build(),
@@ -163,7 +169,7 @@ class PopConfig {
 
   static const PopConfig strong = PopConfig(
     duration: 500,
-    peakScale = 1.4,
+    peakScale: 1.4,
   );
 }
 
@@ -192,15 +198,21 @@ List<KitoAnimation> createPopIn({
     animate()
         .to(opacity, 1.0)
         .withDuration((config.duration * 0.6).round())
-        .withEasing(Easing.easeOut)
+        .withEasing(Easing.easeOutSine)
         .build(),
 
     // Elastic scale
     animate()
         .withKeyframes(scale, [
           Keyframe(value: 0.0, offset: 0.0),
-          Keyframe(value: config.peakScale, offset: 0.7, easing: Easing.easeOutCubic),
-          Keyframe(value: config.finalScale, offset: 1.0, easing: Easing.easeOutBack),
+          Keyframe(
+              value: config.peakScale,
+              offset: 0.7,
+              easing: Easing.easeOutCubic),
+          Keyframe(
+              value: config.finalScale,
+              offset: 1.0,
+              easing: Easing.easeOutBack),
         ])
         .withDuration(config.duration)
         .build(),
@@ -231,14 +243,17 @@ List<KitoAnimation> createPopOut({
     animate()
         .to(opacity, 0.0)
         .withDuration(config.duration)
-        .withEasing(Easing.easeIn)
+        .withEasing(Easing.easeInSine)
         .build(),
 
     // Quick scale down with overshoot
     animate()
         .withKeyframes(scale, [
           Keyframe(value: config.finalScale, offset: 0.0),
-          Keyframe(value: config.finalScale * 1.1, offset: 0.3, easing: Easing.easeIn),
+          Keyframe(
+              value: config.finalScale * 1.1,
+              offset: 0.3,
+              easing: Easing.easeInSine),
           Keyframe(value: 0.0, offset: 1.0, easing: Easing.easeInBack),
         ])
         .withDuration(config.duration)
@@ -381,7 +396,7 @@ List<KitoAnimation> createRotateIn({
     animate()
         .to(opacity, 1.0)
         .withDuration(config.duration)
-        .withEasing(Easing.easeOut)
+        .withEasing(Easing.easeOutSine)
         .build(),
 
     // Scale in
@@ -431,7 +446,7 @@ List<KitoAnimation> createRotateOut({
     animate()
         .to(opacity, 0.0)
         .withDuration(config.duration)
-        .withEasing(Easing.easeIn)
+        .withEasing(Easing.easeInSine)
         .build(),
 
     // Scale out
@@ -490,10 +505,12 @@ List<KitoAnimation> createBouncyAttention({
     animate()
         .withKeyframes(posY, [
           Keyframe(value: posY.value, offset: 0.0),
-          Keyframe(value: posY.value - 30, offset: 0.2, easing: Easing.easeOut),
-          Keyframe(value: posY.value, offset: 0.4, easing: Easing.easeIn),
-          Keyframe(value: posY.value - 15, offset: 0.6, easing: Easing.easeOut),
-          Keyframe(value: posY.value, offset: 0.8, easing: Easing.easeIn),
+          Keyframe(
+              value: posY.value - 30, offset: 0.2, easing: Easing.easeOutSine),
+          Keyframe(value: posY.value, offset: 0.4, easing: Easing.easeInSine),
+          Keyframe(
+              value: posY.value - 15, offset: 0.6, easing: Easing.easeOutSine),
+          Keyframe(value: posY.value, offset: 0.8, easing: Easing.easeInSine),
           Keyframe(value: posY.value, offset: 1.0),
         ])
         .withDuration(config.duration)
@@ -503,8 +520,8 @@ List<KitoAnimation> createBouncyAttention({
     animate()
         .withKeyframes(scale, [
           Keyframe(value: 1.0, offset: 0.0),
-          Keyframe(value: 1.1, offset: 0.5, easing: Easing.easeInOut),
-          Keyframe(value: 1.0, offset: 1.0, easing: Easing.easeInOut),
+          Keyframe(value: 1.1, offset: 0.5, easing: Easing.easeInOutSine),
+          Keyframe(value: 1.0, offset: 1.0, easing: Easing.easeInOutSine),
         ])
         .withDuration(config.duration)
         .build(),
@@ -540,12 +557,12 @@ List<KitoAnimation> createWiggleAttention({
     animate()
         .withKeyframes(rotation, [
           Keyframe(value: 0.0, offset: 0.0),
-          Keyframe(value: -0.1, offset: 0.125, easing: Easing.easeInOut),
-          Keyframe(value: 0.1, offset: 0.25, easing: Easing.easeInOut),
-          Keyframe(value: -0.1, offset: 0.375, easing: Easing.easeInOut),
-          Keyframe(value: 0.1, offset: 0.5, easing: Easing.easeInOut),
-          Keyframe(value: -0.05, offset: 0.625, easing: Easing.easeInOut),
-          Keyframe(value: 0.05, offset: 0.75, easing: Easing.easeInOut),
+          Keyframe(value: -0.1, offset: 0.125, easing: Easing.easeInOutSine),
+          Keyframe(value: 0.1, offset: 0.25, easing: Easing.easeInOutSine),
+          Keyframe(value: -0.1, offset: 0.375, easing: Easing.easeInOutSine),
+          Keyframe(value: 0.1, offset: 0.5, easing: Easing.easeInOutSine),
+          Keyframe(value: -0.05, offset: 0.625, easing: Easing.easeInOutSine),
+          Keyframe(value: 0.05, offset: 0.75, easing: Easing.easeInOutSine),
           Keyframe(value: 0.0, offset: 1.0),
         ])
         .withDuration(config.duration)
@@ -555,8 +572,8 @@ List<KitoAnimation> createWiggleAttention({
     animate()
         .withKeyframes(scale, [
           Keyframe(value: 1.0, offset: 0.0),
-          Keyframe(value: 1.05, offset: 0.5, easing: Easing.easeInOut),
-          Keyframe(value: 1.0, offset: 1.0, easing: Easing.easeInOut),
+          Keyframe(value: 1.05, offset: 0.5, easing: Easing.easeInOutSine),
+          Keyframe(value: 1.0, offset: 1.0, easing: Easing.easeInOutSine),
         ])
         .withDuration(config.duration)
         .build(),

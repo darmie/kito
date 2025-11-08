@@ -1,24 +1,25 @@
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 
 /// Button states
 enum ButtonState {
-  idle,       // Normal state
-  hover,      // Mouse over (web/desktop)
-  pressed,    // Being pressed
-  disabled,   // Cannot interact
-  loading,    // Async operation in progress
+  idle, // Normal state
+  hover, // Mouse over (web/desktop)
+  pressed, // Being pressed
+  disabled, // Cannot interact
+  loading, // Async operation in progress
 }
 
 /// Button events
 enum ButtonEvent {
-  hoverEnter,  // Mouse enters
-  hoverExit,   // Mouse exits
-  pressDown,   // Touch/click down
-  pressUp,     // Touch/click up
-  disable,     // Disable button
-  enable,      // Enable button
-  startLoading,// Start loading state
+  hoverEnter, // Mouse enters
+  hoverExit, // Mouse exits
+  pressDown, // Touch/click down
+  pressUp, // Touch/click up
+  disable, // Disable button
+  enable, // Enable button
+  startLoading, // Start loading state
   stopLoading, // Stop loading state
 }
 
@@ -91,7 +92,8 @@ class ButtonContext {
 }
 
 /// Button state machine
-class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent, ButtonContext> {
+class ButtonStateMachine
+    extends KitoStateMachine<ButtonState, ButtonEvent, ButtonContext> {
   ButtonStateMachine(ButtonContext context)
       : super(
           initial: ButtonState.idle,
@@ -101,7 +103,8 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent, Butt
           context: context,
         );
 
-  static Map<ButtonState, StateConfig<ButtonState, ButtonEvent, ButtonContext>> _buildStates() {
+  static Map<ButtonState, StateConfig<ButtonState, ButtonEvent, ButtonContext>>
+      _buildStates() {
     return {
       ButtonState.idle: StateConfig(
         state: ButtonState.idle,
@@ -136,7 +139,6 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent, Butt
           ),
         },
       ),
-
       ButtonState.hover: StateConfig(
         state: ButtonState.hover,
         transitions: {
@@ -163,7 +165,6 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent, Butt
           ),
         },
       ),
-
       ButtonState.pressed: StateConfig(
         state: ButtonState.pressed,
         transitions: {
@@ -177,7 +178,6 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent, Butt
           ),
         },
       ),
-
       ButtonState.disabled: StateConfig(
         state: ButtonState.disabled,
         transitions: {
@@ -190,7 +190,6 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent, Butt
           ),
         },
       ),
-
       ButtonState.loading: StateConfig(
         state: ButtonState.loading,
         transitions: {

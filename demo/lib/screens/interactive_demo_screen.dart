@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
-import '../widgets/reactive_builder.dart';
 import '../widgets/demo_card.dart';
 
 class InteractiveDemoScreen extends StatelessWidget {
@@ -503,7 +502,7 @@ class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
     final delays = _calculateDelays(index1, index2);
 
     // Animate with stagger
-    Future.delayed(Duration(milliseconds: delays[index1]), () {
+    Future.delayed(Duration(milliseconds: delays[index1]!), () {
       final anim1 = animate()
           .to(gridPositions[index1]!, targetPos1)
           .withDuration(450)
@@ -512,7 +511,7 @@ class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
       anim1.play();
     });
 
-    Future.delayed(Duration(milliseconds: delays[index2]), () {
+    Future.delayed(Duration(milliseconds: delays[index2]!), () {
       final anim2 = animate()
           .to(gridPositions[index2]!, targetPos2)
           .withDuration(450)

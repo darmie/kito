@@ -1,8 +1,7 @@
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
-import '../widgets/reactive_builder.dart';
 import '../widgets/demo_card.dart';
 
 class CompositionsDemoScreen extends StatelessWidget {
@@ -101,7 +100,8 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
           // Spawn animation
           Future.delayed(Duration(milliseconds: row * 50 + col * 30), () {
             if (mounted) {
-              scaleIn(tile.scale, config: const ScaleConfig(duration: 300)).play();
+              scaleIn(tile.scale, config: const ScaleConfig(duration: 300))
+                  .play();
             }
           });
           return tile;
@@ -202,7 +202,8 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     });
   }
 
-  Future<void> _handleSwap(int row1, int col1, int row2, int col2, {required bool isPlayerMove}) async {
+  Future<void> _handleSwap(int row1, int col1, int row2, int col2,
+      {required bool isPlayerMove}) async {
     if (isAnimating) return;
     if (grid[row1][col1] == null || grid[row2][col2] == null) return;
 
@@ -425,7 +426,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
           animate()
               .to(tile.position, targetPos)
               .withDuration(400)
-              .withEasing(Easing.easeOutBounce)
+              .withEasing(Easing.easeInOutBounce)
               .build()
               .play();
 
@@ -440,12 +441,13 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
-  KitoAnimation zoomOut(AnimatableProperty<double> scale, AnimatableProperty<double> opacity) {
+  KitoAnimation zoomOut(
+      AnimatableProperty<double> scale, AnimatableProperty<double> opacity) {
     return animate()
         .to(scale, 0.0)
         .to(opacity, 0.0)
         .withDuration(300)
-        .withEasing(Easing.easeInBack)
+        .withEasing(Easing.easeInOutBack)
         .build();
   }
 
@@ -453,7 +455,8 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Match-3 Game (Playable!)',
-      description: 'Interactive Candy Crush-style game - Click tiles to swap and match!',
+      description:
+          'Interactive Candy Crush-style game - Click tiles to swap and match!',
       onTrigger: _trigger,
       codeSnippet: '''// Interactive Match-3 Game Features:
 
@@ -494,7 +497,10 @@ await _spawnNewTiles();''',
                   color: Theme.of(context).colorScheme.background,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.2),
                   ),
                 ),
                 child: Stack(
@@ -514,11 +520,13 @@ await _spawnNewTiles();''',
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _statRow(context, 'Score', score.toString(), highlight: score >= targetScore),
+                    _statRow(context, 'Score', score.toString(),
+                        highlight: score >= targetScore),
                     const SizedBox(height: 8),
                     _statRow(context, 'Target', targetScore.toString()),
                     const SizedBox(height: 8),
-                    _statRow(context, 'Moves Left', movesLeft.toString(), highlight: movesLeft <= 3),
+                    _statRow(context, 'Moves Left', movesLeft.toString(),
+                        highlight: movesLeft <= 3),
                     const SizedBox(height: 12),
                     if (combo > 1)
                       _statRow(context, 'Combo', '${combo}x', highlight: true),
@@ -534,15 +542,20 @@ await _spawnNewTiles();''',
                               : Colors.red.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: score >= targetScore ? Colors.green : Colors.red,
+                            color: score >= targetScore
+                                ? Colors.green
+                                : Colors.red,
                           ),
                         ),
                         child: Text(
                           score >= targetScore ? '🎉 You Won!' : '💔 Game Over',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: score >= targetScore ? Colors.green : Colors.red,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: score >= targetScore
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -635,7 +648,8 @@ await _spawnNewTiles();''',
     );
   }
 
-  Widget _statRow(BuildContext context, String label, String value, {bool highlight = false}) {
+  Widget _statRow(BuildContext context, String label, String value,
+      {bool highlight = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -646,9 +660,9 @@ await _spawnNewTiles();''',
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: highlight ? Theme.of(context).colorScheme.primary : null,
-          ),
+                fontWeight: FontWeight.w700,
+                color: highlight ? Theme.of(context).colorScheme.primary : null,
+              ),
         ),
       ],
     );
@@ -921,10 +935,12 @@ void _onPanEnd(DragEndDetails details) {
                       : Stack(
                           children: [
                             // Future cards (dimmed)
-                            for (var i = math.min(currentIndex + 2, cards.length - 1);
+                            for (var i = math.min(
+                                    currentIndex + 2, cards.length - 1);
                                 i > currentIndex;
                                 i--)
-                              _buildCard(context, cards[i], i - currentIndex, false),
+                              _buildCard(
+                                  context, cards[i], i - currentIndex, false),
                             // Current card (draggable)
                             if (currentIndex < cards.length)
                               _buildCard(context, cards[currentIndex], 0, true),
@@ -945,7 +961,9 @@ void _onPanEnd(DragEndDetails details) {
                     Icons.close,
                     Colors.red,
                     'Pass ($passesCount)',
-                    currentIndex < cards.length ? () => _swipeCard(false) : null,
+                    currentIndex < cards.length
+                        ? () => _swipeCard(false)
+                        : null,
                   ),
                   _actionButton(
                     context,
@@ -963,7 +981,8 @@ void _onPanEnd(DragEndDetails details) {
     );
   }
 
-  Widget _buildCard(BuildContext context, SwipeCard card, int depth, bool draggable) {
+  Widget _buildCard(
+      BuildContext context, SwipeCard card, int depth, bool draggable) {
     final offset = depth * 4.0;
     final scale = 1.0 - (depth * 0.05);
 
@@ -1200,7 +1219,7 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
         .map((p) => animate()
             .to(p.opacity, 0.0)
             .withDuration(300)
-            .withEasing(Easing.easeOut)
+            .withEasing(Easing.easeOutCubic)
             .build())
         .toList();
 
@@ -1215,7 +1234,7 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
 
     setState(() => isAnimating = true);
 
-    final animations = <Animation>[];
+    final List<KitoAnimation> animations = [];
 
     for (var i = 0; i < photos.length; i++) {
       final photo = photos[i];
@@ -1571,7 +1590,7 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
         .to(currentPageObj.opacity, 0.0)
         .to(currentPageObj.scale, 0.8)
         .withDuration(300)
-        .withEasing(Easing.easeIn)
+        .withEasing(Easing.easeInCubic)
         .build();
 
     fadeOutAnim.play();
@@ -1670,7 +1689,10 @@ sequential([slideOut, slideIn]);
                   shape: BoxShape.circle,
                   color: index == currentPage
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.3),
                 ),
               ),
             ),
@@ -1683,9 +1705,11 @@ sequential([slideOut, slideIn]);
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               OutlinedButton(
-                onPressed: currentPage > 0 && !isAnimating ? _previousPage : null,
+                onPressed:
+                    currentPage > 0 && !isAnimating ? _previousPage : null,
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -1694,7 +1718,8 @@ sequential([slideOut, slideIn]);
               FilledButton(
                 onPressed: !isAnimating ? _trigger : null,
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -1746,7 +1771,10 @@ sequential([slideOut, slideIn]);
               Text(
                 page.description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
                     ),
                 textAlign: TextAlign.center,
               ),
