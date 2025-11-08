@@ -339,6 +339,66 @@ animate()
     .play();
 ```
 
+### Flutter AnimationController Integration
+
+Kito seamlessly integrates with Flutter's native animation system:
+
+```dart
+import 'package:kito/kito.dart';
+
+// Option 1: Drive Kito properties with AnimationController
+final controller = AnimationController(
+  vsync: this,
+  duration: Duration(milliseconds: 500),
+);
+
+final scale = animatableDouble(1.0);
+final driver = AnimatableAnimationDriver(
+  property: scale,
+  animation: CurvedAnimation(parent: controller, curve: Curves.elasticOut),
+  startValue: 1.0,
+  endValue: 1.5,
+);
+
+controller.forward();
+
+// Option 2: KitoAnimationController (unified controller)
+final kitoController = KitoAnimationController.create(
+  vsync: this,
+  duration: Duration(milliseconds: 500),
+  curve: Curves.easeInOutBack,
+  properties: {
+    scale: 1.5,
+    opacity: 0.5,
+    rotation: 3.14159,
+  },
+);
+
+kitoController.forward();
+kitoController.reverse();
+kitoController.reset();
+
+// Option 3: Use Flutter Curves with Kito animations
+final animation = animate()
+    .to(scale, 1.5)
+    .withDuration(500)
+    .withEasing(Curves.bounceOut.toEasing())  // Convert Flutter Curve
+    .build();
+
+// Use Kito easing as Flutter Curve
+final curve = Easing.easeOutElastic.toCurve();
+final curvedAnimation = CurvedAnimation(
+  parent: controller,
+  curve: curve,
+);
+```
+
+**Why integrate with AnimationController?**
+- Use Flutter's built-in curves and animations with Kito's reactive system
+- Leverage existing Flutter widgets that expect AnimationController
+- Bidirectional conversion between Kito and Flutter animation systems
+- Access to both ecosystems' strengths
+
 ## 🎯 Showcase
 
 Kito enables powerful interactive animations with minimal code:
@@ -670,6 +730,42 @@ createDragShuffleListStateMachine(items, positions, {repositionMode})
 createDragShuffleGridStateMachine(items, positions, {rows, cols, mode})
 ```
 
+### Flutter AnimationController Integration
+
+```dart
+// Drive Kito properties with AnimationController
+AnimatableAnimationDriver<T>({
+  property: Animatable<T>,
+  animation: Animation<double>,
+  startValue: T,
+  endValue: T,
+})
+
+// Unified controller for multiple properties
+KitoAnimationController.create({
+  vsync: TickerProvider,
+  duration: Duration,
+  properties: Map<Animatable, dynamic>,
+  curve: Curve,
+})
+controller.forward()
+controller.reverse()
+controller.reset()
+controller.dispose()
+
+// Convert between Kito and Flutter
+Curve.toEasing() → EasingFunction
+EasingFunction.toCurve() → Curve
+
+// Common Flutter curves as Kito easing functions
+FlutterCurves.linear
+FlutterCurves.easeIn / easeOut / easeInOut
+FlutterCurves.bounceIn / bounceOut / bounceInOut
+FlutterCurves.elasticIn / elasticOut / elasticInOut
+FlutterCurves.fastOutSlowIn
+FlutterCurves.decelerate
+```
+
 ## Examples
 
 The `demo/` directory contains comprehensive examples organized by complexity:
@@ -726,13 +822,10 @@ flutter test
 - [x] Gesture-driven animations (swipe, drag, pan gestures)
 - [x] Complex compositions (games, card stacks, galleries, onboarding)
 - [x] Spring physics animations (basic implementation complete)
+- [x] Integration with Flutter's AnimationController
 - [ ] SVG path morphing (advanced)
-- [ ] Integration with Flutter's AnimationController
 - [ ] Performance profiling tools
-- [ ] Animation presets library
 - [ ] Enhanced documentation and tutorials
-- [ ] Web deployment and hosting
-- [ ] Video tutorials and documentation site
 
 ## Contributing
 
