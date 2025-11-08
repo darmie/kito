@@ -1,8 +1,9 @@
 # Kito State Machine Architecture & Implementation Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Draft
 **Last Updated:** 2025-11-08
+**Update:** Added context-based guards and actions (v1.1)
 
 ---
 
@@ -84,8 +85,9 @@ A **finite state machine (FSM)** consists of:
 - **Events**: Triggers that cause state changes (e.g., `submit`, `retry`, `cancel`)
 - **Transitions**: Rules defining how events move between states
 - **Initial State**: The starting state
-- **Guards**: Predicates that conditionally allow/block transitions
-- **Actions**: Side effects executed during transitions or state entry/exit
+- **Context**: Typed state container accessible to guards and actions
+- **Guards**: Pure static functions that conditionally allow/block transitions
+- **Actions**: Pure static functions that transform context (or side effects on entry/exit)
 
 ### Kito-Specific Concepts
 
@@ -116,6 +118,59 @@ State machines expose reactive primitives:
 final machine = ButtonStateMachine();
 final isLoading = computed(() => machine.currentState.value == ButtonState.loading);
 ```
+
+#### **Context-Based Guards and Actions**
+
+State machines use **generic context types** to provide type-safe access to business logic:
+
+```dart
+// Define context type
+class ButtonContext {
+  final bool enabled;
+  final int clickCount;
+
+  const ButtonContext({this.enabled = true, this.clickCount = 0});
+
+  ButtonContext copyWith({bool? enabled, int? clickCount}) {
+    return ButtonContext(
+      enabled: enabled ?? this.enabled,
+      clickCount: clickCount ?? this.clickCount,
+    );
+  }
+}
+
+// Guards are pure static functions
+class ButtonGuards {
+  static bool canTap(ButtonContext ctx) => ctx.enabled && ctx.clickCount < 10;
+}
+
+// Actions transform context
+class ButtonActions {
+  static ButtonContext incrementClick(ButtonContext ctx) {
+    return ctx.copyWith(clickCount: ctx.clickCount + 1);
+  }
+}
+
+// State machine with generic context
+class ButtonStateMachine extends KitoStateMachine<
+  ButtonState,   // State enum
+  ButtonEvent,   // Event enum
+  ButtonContext  // Context type
+> {
+  ButtonStateMachine({
+    required ButtonContext context,
+    required AnimatedWidgetProperties properties,
+  }) : super(initial: ButtonState.idle, context: context, properties: properties);
+}
+```
+
+**Benefits:**
+- ✅ Pure, testable functions
+- ✅ Type-safe context access
+- ✅ No inheritance required
+- ✅ Composable and reusable
+
+See [CONTEXT_BASED_GUARDS.md](./CONTEXT_BASED_GUARDS.md) for detailed documentation.
 
 ### Temporals
 
@@ -203,10 +258,16 @@ Think of Temporals as "ambassadors" representing Kito state machines in the larg
 **Key Classes:**
 
 ```dart
-/// Base state machine runtime
-abstract class KitoStateMachine<S extends Enum, E extends Enum> {
+/// Base state machine runtime with generic context
+abstract class KitoStateMachine<S extends Enum, E extends Enum, C> {
   /// Current state (reactive)
   Signal<S> get currentState;
+
+  /// Current context (mutable or immutable depending on implementation)
+  C get context;
+
+  /// Update context (for mutable contexts or signal-based contexts)
+  void updateContext(C newContext);
 
   /// Send an event to the state machine
   void send(E event);
@@ -222,29 +283,30 @@ abstract class KitoStateMachine<S extends Enum, E extends Enum> {
 }
 
 /// Configuration for a state
-class StateConfig<S, E> {
+class StateConfig<S, E, C> {
   final S state;
-  final Map<E, TransitionConfig<S, E>> transitions;
-  final VoidCallback? onEntry;
-  final VoidCallback? onExit;
+  final Map<E, TransitionConfig<S, E, C>> transitions;
+  final void Function(C context, S from, S to)? onEntry;
+  final void Function(C context, S from, S to)? onExit;
   final KitoAnimation Function()? entryAnimation;
   final KitoAnimation Function()? exitAnimation;
-  final TransientConfig<S>? transient;
+  final TransientConfig<S, C>? transient;
 }
 
 /// Configuration for a transition
-class TransitionConfig<S, E> {
+class TransitionConfig<S, E, C> {
   final S target;
-  final bool Function()? guard;
-  final VoidCallback? action;
+  final bool Function(C context)? guard;  // Context-based guard
+  final C Function(C context)? action;     // Context transformation
   final KitoAnimation Function()? animation;
 }
 
 /// Transient state configuration
-class TransientConfig<S> {
+class TransientConfig<S, C> {
   final Duration? after;
   final S target;
-  final bool Function()? condition;
+  final bool Function(C context)? condition;  // Context-based condition
+  final C Function(C context)? action;         // Context transformation on transition
 }
 
 /// State change event
@@ -630,6 +692,9 @@ name: ButtonStateMachine
 description: "Manages button interaction states with animations"
 version: 1.0.0
 
+# Context type (must be a valid Dart class)
+context: ButtonContext
+
 # Type definitions
 states:
   - idle
@@ -673,7 +738,7 @@ config:
 
       tap:
         target: pressed
-        guard: isEnabled
+        guard: ButtonGuards.isEnabled
 
   pressed:
     # Transient state
@@ -729,9 +794,15 @@ properties:
   - rotation: double
   - color: Color
 
-# Guards (referenced by name, implemented in code)
+# Guards (fully qualified static function names)
 guards:
-  - isEnabled
+  - ButtonGuards.isEnabled
+  - ButtonGuards.canSubmit
+
+# Actions (fully qualified static function names)
+actions:
+  - ButtonActions.incrementClick
+  - ButtonActions.resetState
 
 # Temporal configuration (optional)
 temporal:
@@ -742,14 +813,18 @@ temporal:
 
 ### DSL Validation Rules
 
-1. **All referenced states must be defined** in `states` list
-2. **All referenced events must be defined** in `events` list
-3. **Initial state must exist** in `states` list
-4. **Transient states must have `after`** configuration
-5. **Guards must be declared** in `guards` list
-6. **Animation properties must be declared** in `properties` list
-7. **No unreachable states** (warning, not error)
-8. **No ambiguous transitions** (multiple transitions for same event in one state)
+1. **Context type must be specified** and must be a valid Dart class name
+2. **All referenced states must be defined** in `states` list
+3. **All referenced events must be defined** in `events` list
+4. **Initial state must exist** in `states` list
+5. **Transient states must have `after`** configuration
+6. **Guards must be declared** in `guards` list with fully qualified names (e.g., `ClassName.functionName`)
+7. **Actions must be declared** in `actions` list with fully qualified names
+8. **Guard signatures must match** `bool Function(ContextType)` when generated
+9. **Action signatures must match** `ContextType Function(ContextType)` for pure actions
+10. **Animation properties must be declared** in `properties` list
+11. **No unreachable states** (warning, not error)
+12. **No ambiguous transitions** (multiple transitions for same event in one state)
 
 ---
 
@@ -786,20 +861,25 @@ enum ButtonEvent {
   reset,
 }
 
-/// Generated state machine implementation
-class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent> {
-  final AnimatedWidgetProperties properties;
-  final bool Function()? isEnabled;
-
+/// Generated state machine implementation with context
+class ButtonStateMachine extends KitoStateMachine<
+  ButtonState,
+  ButtonEvent,
+  ButtonContext  // Generic context type
+> {
   ButtonStateMachine({
-    required this.properties,
-    this.isEnabled,
+    required ButtonContext context,
+    required AnimatedWidgetProperties properties,
   }) : super(
     initial: ButtonState.idle,
-    config: _buildConfig(),
+    context: context,
+    properties: properties,
+    config: _buildConfig(properties),
   );
 
-  static StateMachineConfig<ButtonState, ButtonEvent> _buildConfig() {
+  static StateMachineConfig<ButtonState, ButtonEvent, ButtonContext> _buildConfig(
+    AnimatedWidgetProperties properties,
+  ) {
     return StateMachineConfig(
       states: {
         ButtonState.idle: StateConfig(
@@ -807,11 +887,21 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent> {
           transitions: {
             ButtonEvent.hover: TransitionConfig(
               target: ButtonState.hovered,
+              guard: ButtonGuards.isEnabled,  // Static function reference
               animation: () => animate()
                 .to(properties.scale, 1.05)
                 .withDuration(200)
                 .withEasing(Easing.easeOut)
                 .build(),
+            ),
+          },
+        ),
+        ButtonState.hovered: StateConfig(
+          transitions: {
+            ButtonEvent.tap: TransitionConfig(
+              target: ButtonState.pressed,
+              guard: ButtonGuards.canSubmit,
+              action: ButtonActions.incrementClick,  // Context transformation
             ),
           },
         ),
@@ -822,7 +912,7 @@ class ButtonStateMachine extends KitoStateMachine<ButtonState, ButtonEvent> {
 }
 
 /// Generated Temporal wrapper
-class ButtonTemporal extends Temporal<ButtonState, ButtonEvent> {
+class ButtonTemporal extends Temporal<ButtonState, ButtonEvent, ButtonContext> {
   ButtonTemporal({
     required String id,
     required ButtonStateMachine machine,
@@ -849,11 +939,66 @@ class ButtonTemporal extends Temporal<ButtonState, ButtonEvent> {
 
 ### Usage in Flutter
 
-#### **1. Basic Usage**
+#### **1. Define Context, Guards, and Actions**
 
 ```dart
+// button.kito.dart
 import 'package:kito/kito.dart';
-import 'button_state_machine.g.dart';
+
+part 'button_state_machine.g.dart';
+
+/// Context for button state machine
+@immutable
+class ButtonContext {
+  final bool enabled;
+  final int clickCount;
+  final String? errorMessage;
+
+  const ButtonContext({
+    this.enabled = true,
+    this.clickCount = 0,
+    this.errorMessage,
+  });
+
+  ButtonContext copyWith({
+    bool? enabled,
+    int? clickCount,
+    String? errorMessage,
+  }) {
+    return ButtonContext(
+      enabled: enabled ?? this.enabled,
+      clickCount: clickCount ?? this.clickCount,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+/// Guards (pure static functions)
+class ButtonGuards {
+  static bool isEnabled(ButtonContext ctx) => ctx.enabled;
+
+  static bool canSubmit(ButtonContext ctx) {
+    return ctx.enabled && ctx.clickCount < 10 && ctx.errorMessage == null;
+  }
+}
+
+/// Actions (pure context transformations)
+class ButtonActions {
+  static ButtonContext incrementClick(ButtonContext ctx) {
+    return ctx.copyWith(clickCount: ctx.clickCount + 1);
+  }
+
+  static ButtonContext resetState(ButtonContext ctx) {
+    return ctx.copyWith(clickCount: 0, errorMessage: null);
+  }
+}
+```
+
+#### **2. Use in Widget**
+
+```dart
+import 'package:flutter/material.dart';
+import 'button.kito.dart';
 
 class LoginButton extends StatefulWidget {
   @override
@@ -874,14 +1019,16 @@ class _LoginButtonState extends State<LoginButton> {
       color: Colors.blue,
     );
 
+    // Create context and machine
+    final initialContext = ButtonContext(enabled: true);
     _machine = ButtonStateMachine(
+      context: initialContext,
       properties: _props,
-      isEnabled: () => !_isProcessing,
     );
 
     // Listen to state changes
     _machine.changes.listen((change) {
-      print('Transitioned: ${change.from} → ${change.to}');
+      setState(() {});  // Update UI
 
       if (change.to == ButtonState.loading) {
         _submitForm();
@@ -894,6 +1041,10 @@ class _LoginButtonState extends State<LoginButton> {
       await api.submitLogin();
       _machine.send(ButtonEvent.submitSuccess);
     } catch (e) {
+      // Update context with error
+      _machine.updateContext(
+        _machine.context.copyWith(errorMessage: e.toString())
+      );
       _machine.send(ButtonEvent.submitError);
     }
   }
