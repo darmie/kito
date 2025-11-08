@@ -74,7 +74,7 @@ void main() {
       );
 
       controller.value = 0.5;
-      expect(property.value.alpha, closeTo(127, 1));
+      expect(property.value.alpha, 255); // Alpha stays 0xFF (fully opaque)
       expect(property.value.red, closeTo(127, 1));
       expect(property.value.green, closeTo(127, 1));
       expect(property.value.blue, closeTo(127, 1));
@@ -342,6 +342,8 @@ void main() {
 
   group('Integration scenarios', () {
     test('can drive Kito properties and use them in Kito animations', () {
+      TestWidgetsFlutterBinding.ensureInitialized();
+
       final controller = AnimationController(
         vsync: const TestVSync(),
         duration: const Duration(milliseconds: 1000),
