@@ -5,15 +5,22 @@ repository: https://github.com/darmie/kito
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
 
 dependencies:
+  flutter:
+    sdk: flutter
+
   # Core Kito for reactive primitives
   kito:
-    path: ../kito
+    path: ../..
 
   meta: ^1.9.0
 
 dev_dependencies:
-  test: ^1.24.0
+  flutter_test:
+    sdk: flutter
   mocktail: ^1.0.0
-  lints: ^3.0.0
+  flutter_lints: ^3.0.0
+
+flutter:

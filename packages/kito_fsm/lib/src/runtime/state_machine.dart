@@ -263,6 +263,9 @@ abstract class KitoStateMachine<S extends Enum, E extends Enum, C> {
       to: transient.target,
       event: null,
     );
+
+    // Process any events that were emitted during the transient transition
+    _processEventQueue();
   }
 
   /// Dispose the state machine
