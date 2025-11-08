@@ -67,3 +67,5 @@ coverage/
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+docs/KITO_DESIGN_SYSTEM.md
+docs/VISUAL_BUILDER_ARCHITECTURE.md
