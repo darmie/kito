@@ -1,4 +1,5 @@
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/foundation.dart';
 
 /// A test ticker that can be manually advanced for testing
 ///
@@ -48,14 +49,15 @@ class TestTicker implements Ticker {
   }
 
   @override
-  void start() {
+  TickerFuture start() {
     if (_disposed) {
       throw StateError('Cannot start a disposed ticker');
     }
-    if (_isActive) return;
+    if (_isActive) return TickerFuture.complete();
 
     _isActive = true;
     _elapsed = Duration.zero;
+    return TickerFuture.complete();
   }
 
   @override
@@ -72,11 +74,14 @@ class TestTicker implements Ticker {
   }
 
   @override
-  DiagnosticPropertiesBuilder Function(DiagnosticPropertiesBuilder)
-      get debugFillProperties => (properties) => properties;
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties.add(DiagnosticsProperty<Duration>('elapsed', _elapsed));
+    properties.add(FlagProperty('active', value: _isActive, ifTrue: 'active'));
+    properties.add(FlagProperty('disposed', value: _disposed, ifTrue: 'disposed'));
+  }
 
   @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+  String toString({bool debugIncludeStack = false}) {
     return 'TestTicker(elapsed: $_elapsed, active: $_isActive, disposed: $_disposed)';
   }
 
@@ -111,6 +116,19 @@ class TestTicker implements Ticker {
 
   @override
   TickerProvider? get tickerProvider => null;
+
+  @override
+  void absorbTicker(Ticker originalTicker) {
+    // Not implemented for test ticker
+  }
+
+  @override
+  DiagnosticsNode describeForError(String name) {
+    return DiagnosticsProperty<String>(name, 'TestTicker#${shortHash(this)}');
+  }
+
+  @override
+  bool get shouldScheduleTick => _isActive && !_disposed;
 }
 
 /// A ticker provider for tests

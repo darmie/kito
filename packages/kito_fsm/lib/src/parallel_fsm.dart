@@ -10,7 +10,7 @@ class ParallelRegion<S, E, C> {
   final String id;
 
   /// The state machine for this region
-  final StateMachine<S, E, C> stateMachine;
+  final KitoStateMachine<S, E, C> stateMachine;
 
   /// Whether this region is currently active
   bool isActive;
@@ -114,7 +114,8 @@ class ParallelStateMachine<S, E, C> {
   final C? sharedContext;
 
   /// Callbacks for when any region changes state
-  final List<void Function(String regionId, S newState)> _onStateChangeCallbacks = [];
+  final List<void Function(String regionId, S newState)>
+      _onStateChangeCallbacks = [];
 
   /// Callbacks for synchronized state achievements
   final Map<String, void Function()> _syncCallbacks = {};

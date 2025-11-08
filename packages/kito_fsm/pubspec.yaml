@@ -23,4 +23,9 @@ dev_dependencies:
   mocktail: ^1.0.0
   flutter_lints: ^3.0.0
 
+# Exclude archived test files from analysis
+analyzer:
+  exclude:
+    - test_archive/**
+
 flutter:
