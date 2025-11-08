@@ -24,6 +24,7 @@ class PatternsDemoScreen extends StatelessWidget {
           _FormPatternDemo(),
           _DrawerPatternDemo(),
           _ModalPatternDemo(),
+          _ToastPatternDemo(),
         ],
       ),
     );
@@ -640,6 +641,275 @@ fsm.dispatch(ModalEvent.hide);''',
               }).toList(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Toast notification data class
+class ToastNotification {
+  final int id;
+  final String message;
+  final IconData icon;
+  final Color color;
+  final AnimatableProperty<Offset> position;
+  final AnimatableProperty<double> opacity;
+  final AnimatableProperty<double> scale;
+  bool isDismissed = false;
+
+  ToastNotification({
+    required this.id,
+    required this.message,
+    required this.icon,
+    required this.color,
+  })  : position = animatableOffset(const Offset(300, 0)),
+        opacity = animatableDouble(0.0),
+        scale = animatableDouble(0.9);
+}
+
+// Toast Pattern Demo
+class _ToastPatternDemo extends StatefulWidget {
+  const _ToastPatternDemo();
+
+  @override
+  State<_ToastPatternDemo> createState() => _ToastPatternDemoState();
+}
+
+class _ToastPatternDemoState extends State<_ToastPatternDemo> {
+  List<ToastNotification> toasts = [];
+  int nextToastId = 0;
+  int toastCount = 0;
+
+  final toastTypes = [
+    ('Success', Icons.check_circle, Color(0xFF2ECC71)),
+    ('Info', Icons.info, Color(0xFF3498DB)),
+    ('Warning', Icons.warning, Color(0xFFF39C12)),
+    ('Error', Icons.error, Color(0xFFE74C3C)),
+  ];
+
+  void _trigger() {
+    _showRandomToast();
+  }
+
+  void _showRandomToast() {
+    final typeIndex = toastCount % toastTypes.length;
+    final toastType = toastTypes[typeIndex];
+
+    final toast = ToastNotification(
+      id: nextToastId++,
+      message: toastType.$1,
+      icon: toastType.$2,
+      color: toastType.$3,
+    );
+
+    setState(() {
+      toasts.add(toast);
+      toastCount++;
+    });
+
+    // Show animation
+    _showToast(toast);
+
+    // Auto-dismiss after 2 seconds
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted && !toast.isDismissed) {
+        _dismissToast(toast);
+      }
+    });
+  }
+
+  Future<void> _showToast(ToastNotification toast) async {
+    final showAnim = animate()
+        .to(toast.position, Offset.zero)
+        .to(toast.opacity, 1.0)
+        .to(toast.scale, 1.0)
+        .withDuration(400)
+        .withEasing(Easing.easeOutBack)
+        .build();
+
+    showAnim.play();
+  }
+
+  Future<void> _dismissToast(ToastNotification toast) async {
+    if (toast.isDismissed) return;
+
+    final dismissAnim = animate()
+        .to(toast.position, const Offset(300, 0))
+        .to(toast.opacity, 0.0)
+        .to(toast.scale, 0.9)
+        .withDuration(300)
+        .withEasing(Easing.easeInCubic)
+        .build();
+
+    dismissAnim.play();
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    setState(() {
+      toast.isDismissed = true;
+      toasts.remove(toast);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Toast Notifications',
+      description: 'Animated notification pattern',
+      onTrigger: _trigger,
+      codeSnippet: '''
+// Show toast with slide + fade
+final showAnim = animate()
+    .to(toast.position, Offset.zero)
+    .to(toast.opacity, 1.0)
+    .to(toast.scale, 1.0)
+    .withDuration(400)
+    .withEasing(Easing.easeOutBack)
+    .build();
+
+showAnim.play();
+
+// Auto-dismiss after 2 seconds
+Future.delayed(Duration(seconds: 2), () {
+  final dismissAnim = animate()
+      .to(toast.position, Offset(300, 0))
+      .to(toast.opacity, 0.0)
+      .withDuration(300)
+      .build();
+
+  dismissAnim.play();
+});
+''',
+      child: ReactiveBuilder(
+        builder: (context) {
+          return _buildToastContainer(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildToastContainer(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                // Empty state
+                if (toasts.isEmpty)
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No notifications',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Toast notifications stack
+                ...toasts.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final toast = entry.value;
+                  return _buildToast(context, toast, index);
+                }),
+              ],
+            ),
+          ),
+          if (toastCount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Shown: $toastCount',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '•',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Active: ${toasts.length}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToast(BuildContext context, ToastNotification toast, int index) {
+    return Positioned(
+      top: index * 64.0,
+      right: 0,
+      left: 0,
+      child: Transform.translate(
+        offset: toast.position.value,
+        child: Transform.scale(
+          scale: toast.scale.value,
+          child: Opacity(
+            opacity: toast.opacity.value,
+            child: GestureDetector(
+              onTap: () => _dismissToast(toast),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: toast.color.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      toast.icon,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      toast.message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
