@@ -399,6 +399,58 @@ final curvedAnimation = CurvedAnimation(
 - Bidirectional conversion between Kito and Flutter animation systems
 - Access to both ecosystems' strengths
 
+### SVG Path Morphing
+
+Morph between any SVG paths with automatic normalization and interpolation:
+
+```dart
+import 'package:kito/kito.dart';
+
+// Parse SVG path data strings
+final star = SvgPath.fromString(
+  'M 50,10 L 61,35 L 88,35 L 67,52 L 76,79 L 50,62 L 24,79 L 33,52 L 12,35 L 39,35 Z'
+);
+final pentagon = SvgPath.fromString(
+  'M 50,10 L 90,35 L 73,75 L 27,75 L 10,35 Z'
+);
+
+// Create properties for morphing
+final props = SvgAnimationProperties(
+  morphProgress: 0.0,
+  fillColor: Colors.blue,
+);
+
+// Create morphable SVG widget
+final widget = svgMorphPath(
+  startPath: star,
+  endPath: pentagon,
+  properties: props,
+);
+
+// Animate the morph
+animate()
+  .to(props.morphProgress, 1.0)
+  .withDuration(1000)
+  .withEasing(Easing.easeInOutCubic)
+  .build()
+  .play();
+
+// Or use animatable SVG paths directly
+final animPath = animatableSvgPath(star);
+animate()
+  .to(animPath, pentagon)
+  .withDuration(1000)
+  .build()
+  .play();
+```
+
+**Features:**
+- Automatic path normalization (converts all commands to cubic beziers)
+- Compatible path generation (handles different command counts)
+- Parse SVG path data strings (M, L, H, V, C, Q, A, Z commands)
+- Smooth interpolation between any shapes
+- Type-safe animatable SVG path property
+
 ## 🎯 Showcase
 
 Kito enables powerful interactive animations with minimal code:
@@ -766,6 +818,45 @@ FlutterCurves.fastOutSlowIn
 FlutterCurves.decelerate
 ```
 
+### SVG Path Morphing
+
+```dart
+// Parse SVG path data
+SvgPath.fromString(pathData)
+
+// Create animatable SVG path
+animatableSvgPath(initialPath)
+animatableSvgPathString(pathData)
+
+// SVG path operations
+path.normalize()          // Convert to cubic beziers
+path.toPath()             // Convert to Flutter Path
+SvgPathInterpolator.interpolate(from, to, t)
+
+// Create morph widgets
+svgMorphPath({
+  startPath: SvgPath,
+  endPath: SvgPath?,
+  properties: SvgAnimationProperties,
+})
+
+svgMorphPathString({
+  startPathData: String,
+  endPathData: String?,
+  properties: SvgAnimationProperties,
+})
+
+// SVG path commands supported:
+// M/m - Move
+// L/l - Line
+// H/h - Horizontal line
+// V/v - Vertical line
+// C/c - Cubic bezier
+// Q/q - Quadratic bezier
+// A/a - Arc
+// Z/z - Close path
+```
+
 ## Examples
 
 The `demo/` directory contains comprehensive examples organized by complexity:
@@ -823,7 +914,7 @@ flutter test
 - [x] Complex compositions (games, card stacks, galleries, onboarding)
 - [x] Spring physics animations (basic implementation complete)
 - [x] Integration with Flutter's AnimationController
-- [ ] SVG path morphing (advanced)
+- [x] SVG path morphing (advanced)
 - [ ] Performance profiling tools
 - [ ] Enhanced documentation and tutorials
 

@@ -24,5 +24,9 @@ export 'src/targets/widget_target.dart';
 export 'src/targets/canvas_target.dart';
 export 'src/targets/svg_target.dart';
 
+// SVG path morphing
+export 'src/svg/svg_path.dart';
+export 'src/svg/svg_path_animatable.dart';
+
 // Types
 export 'src/types/types.dart';
