@@ -24,6 +24,7 @@ class CompositionsDemoScreen extends StatelessWidget {
           _Match3GameDemo(),
           _CardStackDemo(),
           _PhotoGalleryDemo(),
+          _OnboardingFlowDemo(),
         ],
       ),
     );
@@ -1378,6 +1379,379 @@ parallel([expandAnim, ...fadeAnims]);
         onTap: _collapsePhoto,
         child: Container(
           color: Colors.black.withOpacity(0.0),
+        ),
+      ),
+    );
+  }
+}
+
+// Onboarding page data class
+class OnboardingPage {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final AnimatableProperty<Offset> position;
+  final AnimatableProperty<double> opacity;
+  final AnimatableProperty<double> scale;
+
+  OnboardingPage({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+  })  : position = animatableOffset(Offset.zero),
+        opacity = animatableDouble(0.0),
+        scale = animatableDouble(0.8);
+}
+
+// Onboarding Flow Demo
+class _OnboardingFlowDemo extends StatefulWidget {
+  const _OnboardingFlowDemo();
+
+  @override
+  State<_OnboardingFlowDemo> createState() => _OnboardingFlowDemoState();
+}
+
+class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
+  List<OnboardingPage> pages = [];
+  int currentPage = 0;
+  bool isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePages();
+    _showPage(0);
+  }
+
+  void _initializePages() {
+    pages = [
+      OnboardingPage(
+        title: 'Welcome',
+        description: 'Discover amazing features',
+        icon: Icons.waving_hand,
+        color: const Color(0xFF3498DB),
+      ),
+      OnboardingPage(
+        title: 'Explore',
+        description: 'Find what you love',
+        icon: Icons.explore,
+        color: const Color(0xFF2ECC71),
+      ),
+      OnboardingPage(
+        title: 'Get Started',
+        description: 'Begin your journey',
+        icon: Icons.rocket_launch,
+        color: const Color(0xFFE74C3C),
+      ),
+    ];
+  }
+
+  void _trigger() {
+    if (currentPage < pages.length - 1) {
+      _nextPage();
+    } else {
+      _restart();
+    }
+  }
+
+  Future<void> _showPage(int index) async {
+    if (index < 0 || index >= pages.length) return;
+
+    final page = pages[index];
+
+    final showAnim = animate()
+        .to(page.position, Offset.zero)
+        .to(page.opacity, 1.0)
+        .to(page.scale, 1.0)
+        .withDuration(500)
+        .withEasing(Easing.easeOutCubic)
+        .build();
+
+    showAnim.play();
+  }
+
+  Future<void> _nextPage() async {
+    if (isAnimating || currentPage >= pages.length - 1) return;
+
+    setState(() => isAnimating = true);
+
+    // Slide current page out to the left
+    final currentPageObj = pages[currentPage];
+    final slideOutAnim = animate()
+        .to(currentPageObj.position, const Offset(-400, 0))
+        .to(currentPageObj.opacity, 0.0)
+        .withDuration(400)
+        .withEasing(Easing.easeInCubic)
+        .build();
+
+    slideOutAnim.play();
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    // Prepare next page
+    setState(() => currentPage++);
+
+    // Reset position for next page (start from right)
+    final nextPageObj = pages[currentPage];
+    nextPageObj.position.value = const Offset(400, 0);
+    nextPageObj.opacity.value = 0.0;
+    nextPageObj.scale.value = 0.8;
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Slide next page in from the right
+    final slideInAnim = animate()
+        .to(nextPageObj.position, Offset.zero)
+        .to(nextPageObj.opacity, 1.0)
+        .to(nextPageObj.scale, 1.0)
+        .withDuration(500)
+        .withEasing(Easing.easeOutCubic)
+        .build();
+
+    slideInAnim.play();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() => isAnimating = false);
+  }
+
+  Future<void> _previousPage() async {
+    if (isAnimating || currentPage <= 0) return;
+
+    setState(() => isAnimating = true);
+
+    // Slide current page out to the right
+    final currentPageObj = pages[currentPage];
+    final slideOutAnim = animate()
+        .to(currentPageObj.position, const Offset(400, 0))
+        .to(currentPageObj.opacity, 0.0)
+        .withDuration(400)
+        .withEasing(Easing.easeInCubic)
+        .build();
+
+    slideOutAnim.play();
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    // Prepare previous page
+    setState(() => currentPage--);
+
+    // Reset position for previous page (start from left)
+    final prevPageObj = pages[currentPage];
+    prevPageObj.position.value = const Offset(-400, 0);
+    prevPageObj.opacity.value = 0.0;
+    prevPageObj.scale.value = 0.8;
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Slide previous page in from the left
+    final slideInAnim = animate()
+        .to(prevPageObj.position, Offset.zero)
+        .to(prevPageObj.opacity, 1.0)
+        .to(prevPageObj.scale, 1.0)
+        .withDuration(500)
+        .withEasing(Easing.easeOutCubic)
+        .build();
+
+    slideInAnim.play();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() => isAnimating = false);
+  }
+
+  Future<void> _restart() async {
+    if (isAnimating) return;
+
+    setState(() => isAnimating = true);
+
+    // Fade out current page
+    final currentPageObj = pages[currentPage];
+    final fadeOutAnim = animate()
+        .to(currentPageObj.opacity, 0.0)
+        .to(currentPageObj.scale, 0.8)
+        .withDuration(300)
+        .withEasing(Easing.easeIn)
+        .build();
+
+    fadeOutAnim.play();
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Reset to first page
+    setState(() => currentPage = 0);
+
+    // Reset all pages
+    for (var page in pages) {
+      page.position.value = Offset.zero;
+      page.opacity.value = 0.0;
+      page.scale.value = 0.8;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Show first page
+    _showPage(0);
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() => isAnimating = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Onboarding Flow',
+      description: 'Multi-step page transitions',
+      onTrigger: _trigger,
+      codeSnippet: '''
+// Slide out current page
+final slideOut = animate()
+    .to(currentPage.position, Offset(-400, 0))
+    .to(currentPage.opacity, 0.0)
+    .withDuration(400)
+    .build();
+
+// Slide in next page
+nextPage.position.value = Offset(400, 0);
+final slideIn = animate()
+    .to(nextPage.position, Offset.zero)
+    .to(nextPage.opacity, 1.0)
+    .to(nextPage.scale, 1.0)
+    .withDuration(500)
+    .withEasing(Easing.easeOutCubic)
+    .build();
+
+sequential([slideOut, slideIn]);
+''',
+      child: ReactiveBuilder(
+        builder: (context) {
+          return _buildOnboarding(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildOnboarding(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          // Page content
+          Expanded(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ...pages.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final page = entry.value;
+
+                  if (index != currentPage) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return _buildPage(page);
+                }),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Progress dots
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              pages.length,
+              (index) => Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: index == currentPage
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Navigation buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              OutlinedButton(
+                onPressed: currentPage > 0 && !isAnimating ? _previousPage : null,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Back', style: TextStyle(fontSize: 12)),
+              ),
+              FilledButton(
+                onPressed: !isAnimating ? _trigger : null,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  currentPage < pages.length - 1 ? 'Next' : 'Restart',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPage(OnboardingPage page) {
+    return Transform.translate(
+      offset: page.position.value,
+      child: Transform.scale(
+        scale: page.scale.value,
+        child: Opacity(
+          opacity: page.opacity.value,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: page.color.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  page.icon,
+                  size: 48,
+                  color: page.color,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                page.title,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: page.color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                page.description,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
