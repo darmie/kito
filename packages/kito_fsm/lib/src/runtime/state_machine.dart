@@ -3,7 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:collection';
-import 'package:kito/kito.dart' show Signal, signal;
+import 'package:kito_reactive/kito_reactive.dart' show Signal, signal;
 import 'config.dart';
 import 'transition.dart';
 import '../types/types.dart';

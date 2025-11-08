@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
-import '../reactive/signal.dart';
-import '../reactive/computed.dart';
+import 'package:kito_reactive/kito_reactive.dart';
 import '../engine/animatable.dart';
 
 /// A Flutter widget that rebuilds when reactive values change

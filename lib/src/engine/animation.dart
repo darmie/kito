@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/scheduler.dart';
-import '../reactive/signal.dart';
+import 'package:kito_reactive/kito_reactive.dart';
 import '../types/types.dart';
 import '../easing/easing.dart';
 import 'animatable.dart';
