@@ -667,3 +667,320 @@ void sequencePrimitives(
     cumulativeDelay += anim.duration + delayBetween;
   }
 }
+
+/// Configuration for tada effect
+class TadaConfig {
+  /// Peak scale
+  final double peakScale;
+
+  /// Peak rotation in radians
+  final double peakRotation;
+
+  /// Duration in milliseconds
+  final int duration;
+
+  const TadaConfig({
+    this.peakScale = 1.1,
+    this.peakRotation = 0.05, // ~3 degrees
+    this.duration = 1000,
+  });
+
+  static const TadaConfig subtle = TadaConfig(
+    peakScale: 1.05,
+    peakRotation: 0.03,
+    duration: 800,
+  );
+
+  static const TadaConfig strong = TadaConfig(
+    peakScale: 1.15,
+    peakRotation: 0.1,
+    duration: 1200,
+  );
+}
+
+/// Create a tada animation
+///
+/// Combination of scale and rotation that creates a celebratory effect.
+/// Perfect for success states, achievements, or highlighting important elements.
+///
+/// Example:
+/// ```dart
+/// final scale = animatableDouble(1.0);
+/// final rotation = animatableDouble(0.0);
+/// final scaleAnim = createTadaScale(scale, config: TadaConfig.strong);
+/// final rotateAnim = createTadaRotation(rotation, config: TadaConfig.strong);
+/// scaleAnim.play();
+/// rotateAnim.play();
+/// ```
+KitoAnimation createTadaScale(
+  Animatable<double> property, {
+  TadaConfig config = const TadaConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue * 0.9, offset: 0.1, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.2, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.3, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.4, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.5, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.6, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.7, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.8, easing: Easing.easeInOut),
+        Keyframe(value: startValue * config.peakScale, offset: 0.9, easing: Easing.easeInOut),
+        Keyframe(value: startValue, offset: 1.0),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
+
+KitoAnimation createTadaRotation(
+  Animatable<double> property, {
+  TadaConfig config = const TadaConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue - config.peakRotation, offset: 0.1, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.peakRotation, offset: 0.2, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.peakRotation, offset: 0.3, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.peakRotation, offset: 0.4, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.peakRotation, offset: 0.5, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.peakRotation, offset: 0.6, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.peakRotation, offset: 0.7, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.peakRotation, offset: 0.8, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.peakRotation, offset: 0.9, easing: Easing.easeInOut),
+        Keyframe(value: startValue, offset: 1.0),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
+
+/// Configuration for wobble effect
+class WobbleConfig {
+  /// Maximum rotation angle in radians
+  final double maxRotation;
+
+  /// Maximum translation offset
+  final double maxOffset;
+
+  /// Duration in milliseconds
+  final int duration;
+
+  const WobbleConfig({
+    this.maxRotation = 0.09, // ~5 degrees
+    this.maxOffset = 10.0,
+    this.duration = 1000,
+  });
+
+  static const WobbleConfig subtle = WobbleConfig(
+    maxRotation: 0.05,
+    maxOffset: 5.0,
+    duration: 800,
+  );
+
+  static const WobbleConfig strong = WobbleConfig(
+    maxRotation: 0.15,
+    maxOffset: 15.0,
+    duration: 1200,
+  );
+}
+
+/// Create a wobble rotation animation
+///
+/// Creates a wobbling effect with rotation that alternates direction.
+/// Great for playful attention-grabbing or error states.
+///
+/// Example:
+/// ```dart
+/// final rotation = animatableDouble(0.0);
+/// final anim = createWobbleRotation(rotation, config: WobbleConfig.strong);
+/// anim.play();
+/// ```
+KitoAnimation createWobbleRotation(
+  Animatable<double> property, {
+  WobbleConfig config = const WobbleConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue - config.maxRotation, offset: 0.15, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxRotation, offset: 0.30, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.maxRotation, offset: 0.45, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxRotation, offset: 0.60, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.maxRotation * 0.5, offset: 0.75, easing: Easing.easeInOut),
+        Keyframe(value: startValue, offset: 1.0),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
+
+/// Create a wobble translation animation
+///
+/// Creates a wobbling effect with horizontal translation.
+///
+/// Example:
+/// ```dart
+/// final offsetX = animatableDouble(0.0);
+/// final anim = createWobbleTranslation(offsetX, config: WobbleConfig.strong);
+/// anim.play();
+/// ```
+KitoAnimation createWobbleTranslation(
+  Animatable<double> property, {
+  WobbleConfig config = const WobbleConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue - config.maxOffset, offset: 0.15, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxOffset, offset: 0.30, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.maxOffset, offset: 0.45, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxOffset, offset: 0.60, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.maxOffset * 0.5, offset: 0.75, easing: Easing.easeInOut),
+        Keyframe(value: startValue, offset: 1.0),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
+
+/// Configuration for rubber band effect
+class RubberBandConfig {
+  /// Stretch intensity
+  final double stretchIntensity;
+
+  /// Duration in milliseconds
+  final int duration;
+
+  const RubberBandConfig({
+    this.stretchIntensity = 0.3,
+    this.duration = 1000,
+  });
+
+  static const RubberBandConfig subtle = RubberBandConfig(
+    stretchIntensity: 0.15,
+    duration: 800,
+  );
+
+  static const RubberBandConfig strong = RubberBandConfig(
+    stretchIntensity: 0.5,
+    duration: 1200,
+  );
+}
+
+/// Create a rubber band animation
+///
+/// Creates an exaggerated elastic stretch effect.
+/// Element appears to be pulled and released like a rubber band.
+///
+/// Example:
+/// ```dart
+/// final scaleX = animatableDouble(1.0);
+/// final scaleY = animatableDouble(1.0);
+/// final animX = createRubberBandX(scaleX, config: RubberBandConfig.strong);
+/// final animY = createRubberBandY(scaleY, config: RubberBandConfig.strong);
+/// animX.play();
+/// animY.play();
+/// ```
+KitoAnimation createRubberBandX(
+  Animatable<double> property, {
+  RubberBandConfig config = const RubberBandConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue * (1.0 + config.stretchIntensity), offset: 0.3, easing: Easing.easeOut),
+        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.5), offset: 0.4, easing: Easing.easeIn),
+        Keyframe(value: startValue * (1.0 + config.stretchIntensity * 0.3), offset: 0.5, easing: Easing.easeOut),
+        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.2), offset: 0.65, easing: Easing.easeIn),
+        Keyframe(value: startValue * (1.0 + config.stretchIntensity * 0.1), offset: 0.75, easing: Easing.easeOut),
+        Keyframe(value: startValue, offset: 1.0),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
+
+KitoAnimation createRubberBandY(
+  Animatable<double> property, {
+  RubberBandConfig config = const RubberBandConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.5), offset: 0.3, easing: Easing.easeOut),
+        Keyframe(value: startValue * (1.0 + config.stretchIntensity), offset: 0.4, easing: Easing.easeIn),
+        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.2), offset: 0.5, easing: Easing.easeOut),
+        Keyframe(value: startValue * (1.0 + config.stretchIntensity * 0.3), offset: 0.65, easing: Easing.easeIn),
+        Keyframe(value: startValue * (1.0 - config.stretchIntensity * 0.1), offset: 0.75, easing: Easing.easeOut),
+        Keyframe(value: startValue, offset: 1.0),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
+
+/// Configuration for head shake effect
+class HeadShakeConfig {
+  /// Maximum rotation angle in radians
+  final double maxRotation;
+
+  /// Duration in milliseconds
+  final int duration;
+
+  const HeadShakeConfig({
+    this.maxRotation = 0.1, // ~6 degrees
+    this.duration = 1000,
+  });
+
+  static const HeadShakeConfig subtle = HeadShakeConfig(
+    maxRotation: 0.05,
+    duration: 800,
+  );
+
+  static const HeadShakeConfig strong = HeadShakeConfig(
+    maxRotation: 0.15,
+    duration: 1200,
+  );
+}
+
+/// Create a head shake animation
+///
+/// Creates a "no" gesture by rotating left and right.
+/// Perfect for validation errors or negative feedback.
+///
+/// Example:
+/// ```dart
+/// final rotation = animatableDouble(0.0);
+/// final anim = createHeadShake(rotation, config: HeadShakeConfig.strong);
+/// anim.play();
+/// ```
+KitoAnimation createHeadShake(
+  Animatable<double> property, {
+  HeadShakeConfig config = const HeadShakeConfig(),
+}) {
+  final startValue = property.value;
+
+  return animate()
+      .withKeyframes(property, [
+        Keyframe(value: startValue, offset: 0.0),
+        Keyframe(value: startValue - config.maxRotation * 0.5, offset: 0.065, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxRotation, offset: 0.185, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.maxRotation, offset: 0.315, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxRotation, offset: 0.435, easing: Easing.easeInOut),
+        Keyframe(value: startValue - config.maxRotation, offset: 0.565, easing: Easing.easeInOut),
+        Keyframe(value: startValue + config.maxRotation * 0.5, offset: 0.685, easing: Easing.easeInOut),
+        Keyframe(value: startValue, offset: 0.815),
+      ])
+      .withDuration(config.duration)
+      .build();
+}
