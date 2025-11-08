@@ -23,6 +23,7 @@ class CompositionsDemoScreen extends StatelessWidget {
         children: const [
           _Match3GameDemo(),
           _CardStackDemo(),
+          _PhotoGalleryDemo(),
         ],
       ),
     );
@@ -1080,6 +1081,305 @@ void _onPanEnd(DragEndDetails details) {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
+    );
+  }
+}
+
+// Photo data class
+class Photo {
+  final int id;
+  final String title;
+  final Color color;
+  final IconData icon;
+  final AnimatableProperty<Offset> position;
+  final AnimatableProperty<Size> size;
+  final AnimatableProperty<double> opacity;
+  final AnimatableProperty<double> scale;
+
+  Photo({
+    required this.id,
+    required this.title,
+    required this.color,
+    required this.icon,
+    required Offset initialPosition,
+    required Size initialSize,
+  })  : position = animatableOffset(initialPosition),
+        size = animatableSize(initialSize),
+        opacity = animatableDouble(1.0),
+        scale = animatableDouble(1.0);
+}
+
+// Photo Gallery Demo
+class _PhotoGalleryDemo extends StatefulWidget {
+  const _PhotoGalleryDemo();
+
+  @override
+  State<_PhotoGalleryDemo> createState() => _PhotoGalleryDemoState();
+}
+
+class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
+  static const gridRows = 2;
+  static const gridCols = 3;
+  static const thumbSize = 80.0;
+  static const gap = 8.0;
+
+  List<Photo> photos = [];
+  int? expandedPhotoId;
+  bool isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePhotos();
+  }
+
+  void _initializePhotos() {
+    final photoData = [
+      ('Mountain', Color(0xFF3498DB), Icons.landscape),
+      ('Beach', Color(0xFF1ABC9C), Icons.beach_access),
+      ('City', Color(0xFFE74C3C), Icons.location_city),
+      ('Forest', Color(0xFF27AE60), Icons.park),
+      ('Desert', Color(0xFFF39C12), Icons.wb_sunny),
+      ('Snow', Color(0xFFECF0F1), Icons.ac_unit),
+    ];
+
+    photos = [];
+    for (var i = 0; i < photoData.length; i++) {
+      final row = i ~/ gridCols;
+      final col = i % gridCols;
+      final x = col * (thumbSize + gap);
+      final y = row * (thumbSize + gap);
+
+      photos.add(Photo(
+        id: i,
+        title: photoData[i].$1,
+        color: photoData[i].$2,
+        icon: photoData[i].$3,
+        initialPosition: Offset(x, y),
+        initialSize: const Size(thumbSize, thumbSize),
+      ));
+    }
+  }
+
+  void _trigger() {
+    if (isAnimating) return;
+
+    if (expandedPhotoId != null) {
+      _collapsePhoto();
+    } else {
+      _expandPhoto(photos[0].id);
+    }
+  }
+
+  Future<void> _expandPhoto(int photoId) async {
+    if (isAnimating || expandedPhotoId != null) return;
+
+    setState(() {
+      isAnimating = true;
+      expandedPhotoId = photoId;
+    });
+
+    final photo = photos.firstWhere((p) => p.id == photoId);
+
+    // Calculate fullscreen position and size
+    final targetPosition = const Offset(0, 0);
+    const targetSize = Size(400, 300); // Fullscreen size for demo container
+
+    // Animate selected photo to fullscreen
+    final expandAnim = animate()
+        .to(photo.position, targetPosition)
+        .to(photo.size, targetSize)
+        .withDuration(400)
+        .withEasing(Easing.easeInOutCubic)
+        .build();
+
+    // Fade out other photos
+    final fadeAnims = photos
+        .where((p) => p.id != photoId)
+        .map((p) => animate()
+            .to(p.opacity, 0.0)
+            .withDuration(300)
+            .withEasing(Easing.easeOut)
+            .build())
+        .toList();
+
+    parallel([expandAnim, ...fadeAnims]);
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    setState(() => isAnimating = false);
+  }
+
+  Future<void> _collapsePhoto() async {
+    if (isAnimating || expandedPhotoId == null) return;
+
+    setState(() => isAnimating = true);
+
+    final animations = <Animation>[];
+
+    for (var i = 0; i < photos.length; i++) {
+      final photo = photos[i];
+      final row = i ~/ gridCols;
+      final col = i % gridCols;
+      final x = col * (thumbSize + gap);
+      final y = row * (thumbSize + gap);
+
+      final collapseAnim = animate()
+          .to(photo.position, Offset(x, y))
+          .to(photo.size, const Size(thumbSize, thumbSize))
+          .to(photo.opacity, 1.0)
+          .withDuration(400)
+          .withEasing(Easing.easeInOutCubic)
+          .build();
+
+      animations.add(collapseAnim);
+    }
+
+    parallel(animations);
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    setState(() {
+      isAnimating = false;
+      expandedPhotoId = null;
+    });
+  }
+
+  void _onPhotoTap(int photoId) {
+    if (expandedPhotoId == null) {
+      _expandPhoto(photoId);
+    } else if (expandedPhotoId == photoId) {
+      _collapsePhoto();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Photo Gallery',
+      description: 'Shared element transitions',
+      onTrigger: _trigger,
+      codeSnippet: '''
+// Expand photo with hero animation
+final expandAnim = animate()
+    .to(photo.position, targetPosition)
+    .to(photo.size, targetSize)
+    .withDuration(400)
+    .withEasing(Easing.easeInOutCubic)
+    .build();
+
+// Fade out other photos
+final fadeAnims = otherPhotos
+    .map((p) => animate()
+        .to(p.opacity, 0.0)
+        .withDuration(300)
+        .build())
+    .toList();
+
+parallel([expandAnim, ...fadeAnims]);
+''',
+      child: ReactiveBuilder(
+        builder: (context) {
+          return _buildGallery(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildGallery(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: SizedBox(
+          width: gridCols * (thumbSize + gap) - gap,
+          height: gridRows * (thumbSize + gap) - gap,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Render photos
+              ...photos.map((photo) => _buildPhoto(photo)),
+
+              // Detail view overlay when photo is expanded
+              if (expandedPhotoId != null)
+                _buildDetailOverlay(
+                  photos.firstWhere((p) => p.id == expandedPhotoId),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhoto(Photo photo) {
+    final isExpanded = expandedPhotoId == photo.id;
+
+    return Positioned(
+      left: photo.position.value.dx,
+      top: photo.position.value.dy,
+      child: GestureDetector(
+        onTap: () => _onPhotoTap(photo.id),
+        child: Opacity(
+          opacity: photo.opacity.value,
+          child: Container(
+            width: photo.size.value.width,
+            height: photo.size.value.height,
+            decoration: BoxDecoration(
+              color: photo.color,
+              borderRadius: BorderRadius.circular(isExpanded ? 8 : 4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isExpanded ? 0.3 : 0.2),
+                  blurRadius: isExpanded ? 16 : 4,
+                  offset: Offset(0, isExpanded ? 8 : 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  photo.icon,
+                  size: isExpanded ? 64 : 32,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+                if (isExpanded) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    photo.title,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Tap to close',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailOverlay(Photo photo) {
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: _collapsePhoto,
+        child: Container(
+          color: Colors.black.withOpacity(0.0),
+        ),
+      ),
     );
   }
 }
