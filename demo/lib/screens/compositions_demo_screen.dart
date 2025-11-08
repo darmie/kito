@@ -72,8 +72,12 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   int? selectedCol;
   int score = 0;
   int moves = 0;
+  int movesLeft = 20;
+  int targetScore = 500;
   int combo = 0;
   bool isAnimating = false;
+  bool gameOver = false;
+  bool isAutoPlay = false;
   int nextTileId = 0;
 
   final random = math.Random();
@@ -119,42 +123,93 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   }
 
   void _trigger() {
-    // Auto-play demo: make random swaps
-    score = 0;
-    moves = 0;
-    combo = 0;
-    isAnimating = false;
+    // Reset game
+    setState(() {
+      score = 0;
+      moves = 0;
+      movesLeft = 20;
+      combo = 0;
+      isAnimating = false;
+      gameOver = false;
+      selectedRow = null;
+      selectedCol = null;
+      isAutoPlay = false;
+    });
     _initializeGrid();
+  }
 
-    // Simulate some moves
+  void _startAutoPlay() {
+    setState(() {
+      isAutoPlay = true;
+      score = 0;
+      moves = 0;
+      movesLeft = 20;
+      combo = 0;
+      isAnimating = false;
+      gameOver = false;
+      selectedRow = null;
+      selectedCol = null;
+    });
+    _initializeGrid();
     _autoPlay();
   }
 
   void _autoPlay() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
+    if (!mounted || !isAutoPlay) return;
 
     // Try to make a few moves
-    for (var i = 0; i < 3; i++) {
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (!mounted) return;
+    for (var i = 0; i < 5 && isAutoPlay && !gameOver; i++) {
+      await Future.delayed(const Duration(milliseconds: 1200));
+      if (!mounted || !isAutoPlay) return;
 
       // Find a random valid swap
       final row = random.nextInt(rows);
       final col = random.nextInt(cols);
 
-      if (row < rows - 1) {
-        await _handleSwap(row, col, row + 1, col);
+      if (row < rows - 1 && !gameOver) {
+        await _handleSwap(row, col, row + 1, col, isPlayerMove: false);
       }
     }
   }
 
-  Future<void> _handleSwap(int row1, int col1, int row2, int col2) async {
+  void _onTileTap(int row, int col) {
+    if (isAnimating || gameOver || isAutoPlay) return;
+    if (grid[row][col] == null) return;
+
+    setState(() {
+      if (selectedRow == null && selectedCol == null) {
+        // First selection
+        selectedRow = row;
+        selectedCol = col;
+      } else {
+        // Second selection - check if adjacent
+        final rowDiff = (row - selectedRow!).abs();
+        final colDiff = (col - selectedCol!).abs();
+
+        if ((rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1)) {
+          // Valid adjacent swap
+          _handleSwap(selectedRow!, selectedCol!, row, col, isPlayerMove: true);
+        } else {
+          // Not adjacent - just change selection
+          selectedRow = row;
+          selectedCol = col;
+        }
+      }
+    });
+  }
+
+  Future<void> _handleSwap(int row1, int col1, int row2, int col2, {required bool isPlayerMove}) async {
     if (isAnimating) return;
     if (grid[row1][col1] == null || grid[row2][col2] == null) return;
 
-    isAnimating = true;
-    moves++;
+    setState(() {
+      isAnimating = true;
+      if (isPlayerMove) {
+        moves++;
+        movesLeft--;
+      }
+    });
 
     final tile1 = grid[row1][col1]!;
     final tile2 = grid[row2][col2]!;
@@ -184,14 +239,56 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     grid[row2][col2] = tile1;
 
     // Check for matches
-    await _processMatches();
+    final hadMatches = await _processMatches();
 
-    isAnimating = false;
+    // If no matches and player move, swap back
+    if (!hadMatches && isPlayerMove) {
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Swap back animation
+      final swapBackAnim1 = animate()
+          .to(tile2.position, pos2Target)
+          .withDuration(250)
+          .withEasing(Easing.easeInOutCubic)
+          .build();
+
+      final swapBackAnim2 = animate()
+          .to(tile1.position, pos1Target)
+          .withDuration(250)
+          .withEasing(Easing.easeInOutCubic)
+          .build();
+
+      parallel([swapBackAnim1, swapBackAnim2]);
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Swap back in grid
+      grid[row1][col1] = tile1;
+      grid[row2][col2] = tile2;
+
+      // Restore move
+      setState(() {
+        moves--;
+        movesLeft++;
+      });
+    }
+
+    setState(() {
+      isAnimating = false;
+      selectedRow = null;
+      selectedCol = null;
+    });
+
+    // Check game over
+    if (movesLeft <= 0) {
+      setState(() => gameOver = true);
+    }
   }
 
-  Future<void> _processMatches() async {
+  Future<bool> _processMatches() async {
     combo = 0;
     var foundMatches = true;
+    var hadAnyMatches = false;
 
     while (foundMatches && mounted) {
       final matches = _findMatches();
@@ -200,6 +297,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
         break;
       }
 
+      hadAnyMatches = true;
       combo++;
 
       // Animate matched tiles out
@@ -232,6 +330,8 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
 
       await Future.delayed(const Duration(milliseconds: 200));
     }
+
+    return hadAnyMatches;
   }
 
   List<(int, int)> _findMatches() {
@@ -349,28 +449,35 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   @override
   Widget build(BuildContext context) {
     return DemoCard(
-      title: 'Match-3 Game',
-      description: 'Candy Crush-style game with match detection, gravity, and combos',
+      title: 'Match-3 Game (Playable!)',
+      description: 'Interactive Candy Crush-style game - Click tiles to swap and match!',
       onTrigger: _trigger,
-      codeSnippet: '''// Combining multiple Kito patterns:
-// - Grid shuffle for tile swapping
-// - Atomic primitives for match effects
-// - Timeline orchestration for cascades
-// - Reactive state for score tracking
+      codeSnippet: '''// Interactive Match-3 Game Features:
 
-// Match detection
-final matches = _findMatches();
-
-// Animate removal
-for (final tile in matches) {
-  zoomOut(tile.scale, tile.opacity).play();
+// Tile selection with visual feedback
+void _onTileTap(int row, int col) {
+  if (selectedRow == null) {
+    selectedRow = row;
+    selectedCol = col; // First selection
+  } else {
+    // Check if adjacent
+    final adjacent = isAdjacent(row, col);
+    if (adjacent) {
+      await _handleSwap(); // Swap tiles
+    }
+  }
 }
 
-// Apply gravity + spawn new tiles
-await _applyGravity();
-await _spawnNewTiles();
+// Swap validation: revert if no match
+final hadMatches = await _processMatches();
+if (!hadMatches) {
+  // Animate swap back
+  parallel([swapBackAnim1, swapBackAnim2]);
+}
 
-// Recursive match checking for cascades''',
+// Cascade combos + gravity physics
+await _applyGravity();
+await _spawnNewTiles();''',
       child: ReactiveBuilder(
         builder: (_) => Container(
           padding: const EdgeInsets.all(16),
@@ -404,29 +511,78 @@ await _spawnNewTiles();
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _statRow(context, 'Score', score.toString()),
-                    const SizedBox(height: 12),
-                    _statRow(context, 'Moves', moves.toString()),
+                    _statRow(context, 'Score', score.toString(), highlight: score >= targetScore),
+                    const SizedBox(height: 8),
+                    _statRow(context, 'Target', targetScore.toString()),
+                    const SizedBox(height: 8),
+                    _statRow(context, 'Moves Left', movesLeft.toString(), highlight: movesLeft <= 3),
                     const SizedBox(height: 12),
                     if (combo > 1)
                       _statRow(context, 'Combo', '${combo}x', highlight: true),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+
+                    // Game state
+                    if (gameOver)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: score >= targetScore
+                              ? Colors.green.withOpacity(0.2)
+                              : Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: score >= targetScore ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        child: Text(
+                          score >= targetScore ? '🎉 You Won!' : '💔 Game Over',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: score >= targetScore ? Colors.green : Colors.red,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    // Auto-play button
+                    if (!gameOver && !isAutoPlay)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _startAutoPlay,
+                          icon: const Icon(Icons.smart_toy, size: 16),
+                          label: const Text('Auto-Play'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                        ),
+                      ),
+
+                    if (isAutoPlay)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => setState(() => isAutoPlay = false),
+                          icon: const Icon(Icons.stop, size: 16),
+                          label: const Text('Stop Auto'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 16),
                     Text(
-                      'Features:',
+                      'How to Play:',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    _featureText(context, '• Match 3+ tiles'),
-                    _featureText(context, '• Gravity physics'),
-                    _featureText(context, '• Cascade combos'),
-                    _featureText(context, '• Spawn animations'),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Click ▶ to see auto-play',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
+                    _featureText(context, '• Click tiles to select'),
+                    _featureText(context, '• Swap adjacent tiles'),
+                    _featureText(context, '• Match 3+ same colors'),
+                    _featureText(context, '• Reach target score!'),
                   ],
                 ),
               ),
@@ -438,26 +594,37 @@ await _spawnNewTiles();
   }
 
   Widget _buildTile(GameTile tile, int row, int col) {
+    final isSelected = selectedRow == row && selectedCol == col;
+
     return Positioned(
       left: tile.position.value.dx + gap,
       top: tile.position.value.dy + gap,
-      child: Transform.scale(
-        scale: tile.scale.value,
-        child: Opacity(
-          opacity: tile.opacity.value,
-          child: Container(
-            width: tileSize,
-            height: tileSize,
-            decoration: BoxDecoration(
-              color: colors[tile.color],
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+      child: GestureDetector(
+        onTap: () => _onTileTap(row, col),
+        child: Transform.scale(
+          scale: tile.scale.value * (isSelected ? 1.1 : 1.0),
+          child: Opacity(
+            opacity: tile.opacity.value,
+            child: Container(
+              width: tileSize,
+              height: tileSize,
+              decoration: BoxDecoration(
+                color: colors[tile.color],
+                borderRadius: BorderRadius.circular(4),
+                border: isSelected
+                    ? Border.all(
+                        color: Colors.white,
+                        width: 3,
+                      )
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isSelected ? 0.3 : 0.1),
+                    blurRadius: isSelected ? 8 : 4,
+                    offset: Offset(0, isSelected ? 4 : 2),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
