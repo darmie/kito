@@ -13,6 +13,19 @@ class StateMachineConfig<S extends Enum, E extends Enum, C> {
   });
 }
 
+/// State type for hierarchical state machines
+enum StateType {
+  /// Atomic state with no substates
+  atomic,
+
+  /// Compound state with substates (one active at a time)
+  compound,
+
+  /// Parallel state with substates (all active simultaneously)
+  /// Note: Parallel states are planned for Phase 3
+  parallel,
+}
+
 /// Configuration for a single state
 class StateConfig<S extends Enum, E extends Enum, C> {
   /// The state this config represents
@@ -40,16 +53,41 @@ class StateConfig<S extends Enum, E extends Enum, C> {
   /// Transient state configuration (auto-transition)
   final TransientConfig<S, C>? transient;
 
+  /// Substates for hierarchical state machines (compound states)
+  final Map<S, StateConfig<S, E, C>>? substates;
+
+  /// Initial substate to enter when this state is entered
+  /// Required if substates is not null
+  final S? initial;
+
+  /// State type (atomic, compound, or parallel)
+  final StateType type;
+
   const StateConfig({
     required this.state,
     this.transitions = const {},
     this.onEntry,
     this.onExit,
     this.transient,
-  });
+    this.substates,
+    this.initial,
+    this.type = StateType.atomic,
+  }) : assert(
+          substates == null || initial != null,
+          'initial is required when substates is provided',
+        );
 
   /// Check if this is a transient state
   bool get isTransient => transient != null;
+
+  /// Check if this is a compound state (has substates)
+  bool get isCompound => type == StateType.compound && substates != null;
+
+  /// Check if this is a parallel state
+  bool get isParallel => type == StateType.parallel;
+
+  /// Check if this is an atomic state (no substates)
+  bool get isAtomic => type == StateType.atomic;
 }
 
 /// Configuration for a transition between states
