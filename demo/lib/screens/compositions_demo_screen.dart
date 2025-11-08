@@ -16,12 +16,13 @@ class CompositionsDemoScreen extends StatelessWidget {
       ),
       body: GridView.count(
         padding: const EdgeInsets.all(24),
-        crossAxisCount: 1,
+        crossAxisCount: 2,
         mainAxisSpacing: 24,
         crossAxisSpacing: 24,
-        childAspectRatio: 1.6,
+        childAspectRatio: 1.3,
         children: const [
           _Match3GameDemo(),
+          _CardStackDemo(),
         ],
       ),
     );
@@ -658,6 +659,427 @@ await _spawnNewTiles();''',
         text,
         style: Theme.of(context).textTheme.bodySmall,
       ),
+    );
+  }
+}
+
+// Card data class
+class SwipeCard {
+  final String title;
+  final String subtitle;
+  final Color color;
+  final AnimatableProperty<Offset> position;
+  final AnimatableProperty<double> rotation;
+  final AnimatableProperty<double> scale;
+  final AnimatableProperty<double> opacity;
+
+  SwipeCard({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  })  : position = animatableOffset(Offset.zero),
+        rotation = animatableDouble(0.0),
+        scale = animatableDouble(1.0),
+        opacity = animatableDouble(1.0);
+}
+
+// Card Stack Demo (Tinder-style swipe)
+class _CardStackDemo extends StatefulWidget {
+  const _CardStackDemo();
+
+  @override
+  State<_CardStackDemo> createState() => _CardStackDemoState();
+}
+
+class _CardStackDemoState extends State<_CardStackDemo> {
+  final cards = <SwipeCard>[];
+  int currentIndex = 0;
+  Offset? dragStart;
+  bool isDragging = false;
+  int likesCount = 0;
+  int passesCount = 0;
+
+  final cardColors = const [
+    Color(0xFFE74C3C), // Red
+    Color(0xFF3498DB), // Blue
+    Color(0xFF2ECC71), // Green
+    Color(0xFFF39C12), // Orange
+    Color(0xFF9B59B6), // Purple
+  ];
+
+  final cardTitles = const [
+    'Mountains',
+    'Ocean',
+    'Forest',
+    'Desert',
+    'City',
+  ];
+
+  final cardSubtitles = const [
+    'Adventure awaits',
+    'Calm and peaceful',
+    'Nature\'s beauty',
+    'Vast horizons',
+    'Urban exploration',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCards();
+  }
+
+  void _initializeCards() {
+    cards.clear();
+    for (var i = 0; i < 5; i++) {
+      cards.add(SwipeCard(
+        title: cardTitles[i],
+        subtitle: cardSubtitles[i],
+        color: cardColors[i],
+      ));
+    }
+    currentIndex = 0;
+    likesCount = 0;
+    passesCount = 0;
+  }
+
+  void _trigger() {
+    setState(() {
+      _initializeCards();
+    });
+
+    // Auto-demo: swipe through cards
+    _autoSwipe();
+  }
+
+  void _autoSwipe() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted || currentIndex >= cards.length) return;
+
+    // Swipe right
+    await _swipeCard(true);
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    if (!mounted || currentIndex >= cards.length) return;
+
+    // Swipe left
+    await _swipeCard(false);
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    if (!mounted || currentIndex >= cards.length) return;
+
+    // Swipe right
+    await _swipeCard(true);
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    if (currentIndex >= cards.length) return;
+    setState(() {
+      dragStart = details.localPosition;
+      isDragging = true;
+    });
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (currentIndex >= cards.length || dragStart == null) return;
+
+    final card = cards[currentIndex];
+    final delta = details.localPosition - dragStart!;
+
+    setState(() {
+      card.position.value = delta;
+      // Rotation based on horizontal drag (-15 to +15 degrees)
+      card.rotation.value = (delta.dx / 200).clamp(-0.26, 0.26); // ~15 degrees
+    });
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (currentIndex >= cards.length) return;
+
+    final card = cards[currentIndex];
+    final swipeThreshold = 100.0;
+
+    if (card.position.value.dx.abs() > swipeThreshold) {
+      // Complete the swipe
+      final swipeRight = card.position.value.dx > 0;
+      _swipeCard(swipeRight);
+    } else {
+      // Snap back
+      _snapBack();
+    }
+
+    setState(() {
+      isDragging = false;
+      dragStart = null;
+    });
+  }
+
+  Future<void> _swipeCard(bool right) async {
+    if (currentIndex >= cards.length) return;
+
+    final card = cards[currentIndex];
+
+    setState(() {
+      if (right) {
+        likesCount++;
+      } else {
+        passesCount++;
+      }
+    });
+
+    // Animate card flying off
+    final targetX = right ? 400.0 : -400.0;
+    final targetRotation = right ? 0.4 : -0.4;
+
+    final swipeAnim = animate()
+        .to(card.position, Offset(targetX, -100))
+        .to(card.rotation, targetRotation)
+        .to(card.opacity, 0.0)
+        .withDuration(400)
+        .withEasing(Easing.easeInCubic)
+        .build();
+
+    swipeAnim.play();
+
+    // Scale up next card
+    if (currentIndex + 1 < cards.length) {
+      final nextCard = cards[currentIndex + 1];
+      final scaleAnim = animate()
+          .to(nextCard.scale, 1.0)
+          .withDuration(300)
+          .withEasing(Easing.easeOutBack)
+          .build();
+      scaleAnim.play();
+    }
+
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    setState(() {
+      currentIndex++;
+    });
+  }
+
+  void _snapBack() {
+    if (currentIndex >= cards.length) return;
+
+    final card = cards[currentIndex];
+
+    final snapAnim = animate()
+        .to(card.position, Offset.zero)
+        .to(card.rotation, 0.0)
+        .withDuration(300)
+        .withEasing(Easing.easeOutBack)
+        .build();
+
+    snapAnim.play();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allSwiped = currentIndex >= cards.length;
+
+    return DemoCard(
+      title: 'Card Stack',
+      description: 'Tinder-style swipe cards with gesture physics',
+      onTrigger: _trigger,
+      codeSnippet: '''// Gesture-driven card swipe
+
+void _onPanUpdate(DragUpdateDetails details) {
+  final delta = details.localPosition - dragStart;
+
+  // Update position
+  card.position.value = delta;
+
+  // Rotation based on horizontal drag
+  card.rotation.value = (delta.dx / 200)
+    .clamp(-0.26, 0.26); // ±15°
+}
+
+void _onPanEnd(DragEndDetails details) {
+  if (card.position.dx.abs() > threshold) {
+    // Swipe complete
+    _swipeCard(card.position.dx > 0);
+  } else {
+    // Snap back with spring
+    spring(property: card.position,
+           target: Offset.zero).play();
+  }
+}''',
+      child: ReactiveBuilder(
+        builder: (_) => Column(
+          children: [
+            // Card stack
+            Expanded(
+              child: Center(
+                child: SizedBox(
+                  width: 280,
+                  height: 360,
+                  child: allSwiped
+                      ? _buildAllSwiped(context)
+                      : Stack(
+                          children: [
+                            // Future cards (dimmed)
+                            for (var i = math.min(currentIndex + 2, cards.length - 1);
+                                i > currentIndex;
+                                i--)
+                              _buildCard(context, cards[i], i - currentIndex, false),
+                            // Current card (draggable)
+                            if (currentIndex < cards.length)
+                              _buildCard(context, cards[currentIndex], 0, true),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+
+            // Stats
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _actionButton(
+                    context,
+                    Icons.close,
+                    Colors.red,
+                    'Pass ($passesCount)',
+                    currentIndex < cards.length ? () => _swipeCard(false) : null,
+                  ),
+                  _actionButton(
+                    context,
+                    Icons.favorite,
+                    Colors.green,
+                    'Like ($likesCount)',
+                    currentIndex < cards.length ? () => _swipeCard(true) : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, SwipeCard card, int depth, bool draggable) {
+    final offset = depth * 4.0;
+    final scale = 1.0 - (depth * 0.05);
+
+    Widget cardWidget = Transform.translate(
+      offset: Offset(0, offset) + card.position.value,
+      child: Transform.rotate(
+        angle: card.rotation.value,
+        child: Transform.scale(
+          scale: card.scale.value * scale,
+          child: Opacity(
+            opacity: card.opacity.value * (1.0 - depth * 0.2),
+            child: Container(
+              width: 280,
+              height: 360,
+              decoration: BoxDecoration(
+                color: card.color,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      card.title,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      card.subtitle,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (draggable) {
+      cardWidget = GestureDetector(
+        onPanStart: _onPanStart,
+        onPanUpdate: _onPanUpdate,
+        onPanEnd: _onPanEnd,
+        child: cardWidget,
+      );
+    }
+
+    return cardWidget;
+  }
+
+  Widget _buildAllSwiped(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.check_circle_outline,
+          size: 64,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'All cards swiped!',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 24),
+        OutlinedButton.icon(
+          onPressed: _trigger,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Reset'),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionButton(
+    BuildContext context,
+    IconData icon,
+    Color color,
+    String label,
+    VoidCallback? onPressed,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          color: color,
+          iconSize: 32,
+          style: IconButton.styleFrom(
+            backgroundColor: color.withOpacity(0.1),
+            disabledBackgroundColor: Colors.grey.withOpacity(0.1),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
     );
   }
 }
