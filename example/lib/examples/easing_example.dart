@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 
 class EasingExample extends StatefulWidget {
@@ -134,7 +134,9 @@ class _EasingDemo {
     // Get screen width - 80 (40 for box width, 40 for padding)
     const maxTranslate = 300.0;
 
-    animation = animate()
+    // Use the global animate() function from kito
+    final builder = AnimationBuilder();
+    animation = builder
         .to(props.translateX, maxTranslate, easing: easing)
         .withDuration(1500)
         .withDirection(AnimationDirection.alternate)

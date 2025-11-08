@@ -1,0 +1,33 @@
+name: kito_demo
+description: Interactive Flutter web demo showcasing Kito animation system
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Kito packages
+  kito:
+    path: ..
+  kito_fsm:
+    path: ../packages/kito_fsm
+  kito_reactive:
+    path: ../packages/kito_reactive
+  kito_patterns:
+    path: ../packages/kito_patterns
+
+  # UI
+  google_fonts: ^6.1.0
+  lucide_icons: ^0.257.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 /// Duration in milliseconds
-typedef Duration = int;
+typedef Milliseconds = int;
 
 /// Callback for animation updates
 typedef AnimationCallback = void Function(double progress);

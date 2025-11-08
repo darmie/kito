@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 
 class TimelineExample extends StatefulWidget {
@@ -41,7 +41,7 @@ class _TimelineExampleState extends State<TimelineExample> {
         .withDuration(1000)
         .build();
 
-    timeline = timeline()
+    timeline = Timeline()
       ..add(anim1)
       ..add(anim2)
       ..add(anim3)
@@ -66,7 +66,7 @@ class _TimelineExampleState extends State<TimelineExample> {
         .withDuration(1000)
         .build();
 
-    timeline = timeline()
+    timeline = Timeline()
       ..add(anim1)
       ..add(anim2, position: TimelinePosition.concurrent)
       ..add(anim3, position: TimelinePosition.concurrent)

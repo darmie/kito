@@ -1,4 +1,6 @@
-import '../reactive/signal.dart';
+import 'dart:ui';
+
+import 'package:kito_reactive/kito_reactive.dart';
 import '../types/types.dart';
 
 /// Base interface for animatable properties

@@ -1,7 +1,9 @@
 import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
+import 'package:kito_reactive/kito_reactive.dart';
 import '../engine/animatable.dart';
-import '../reactive/signal.dart';
+import '../svg/svg_path.dart';
+import '../svg/svg_path_animatable.dart';
 
 /// Properties for SVG animations
 class SvgAnimationProperties {
@@ -72,8 +74,8 @@ abstract class KitoSvgShape extends CustomPainter {
   /// Get fill paint with current properties
   Paint get fillPaint {
     return Paint()
-      ..color = properties.fillColor.value.withOpacity(
-        properties.fillOpacity.value.clamp(0.0, 1.0),
+      ..color = properties.fillColor.value.withValues(
+        alpha: properties.fillOpacity.value.clamp(0.0, 1.0),
       )
       ..style = PaintingStyle.fill;
   }
@@ -81,8 +83,8 @@ abstract class KitoSvgShape extends CustomPainter {
   /// Get stroke paint with current properties
   Paint get strokePaint {
     return Paint()
-      ..color = properties.strokeColor.value.withOpacity(
-        properties.strokeOpacity.value.clamp(0.0, 1.0),
+      ..color = properties.strokeColor.value.withValues(
+        alpha: properties.strokeOpacity.value.clamp(0.0, 1.0),
       )
       ..strokeWidth = properties.strokeWidth.value
       ..style = PaintingStyle.stroke;
@@ -160,6 +162,57 @@ class SvgPathShape extends KitoSvgShape {
     // This is a simplified version
     // Production code would use proper path morphing algorithms
     return t < 0.5 ? start : end;
+  }
+}
+
+/// SVG path shape with proper morphing using SvgPath
+class SvgMorphShape extends KitoSvgShape {
+  final SvgPath startPath;
+  final SvgPath? endPath;
+
+  SvgMorphShape(
+    super.properties,
+    this.startPath, {
+    this.endPath,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    applyTransform(canvas);
+
+    // Get the current path based on morph progress
+    final currentPath = _getCurrentPath();
+    final flutterPath = currentPath.toPath();
+
+    // Apply dash effect
+    if (properties.dashLength.value > 0) {
+      final dashedPaint = strokePaint;
+      // Note: Flutter doesn't have built-in dash support,
+      // you'd need to use path_drawing package or implement manually
+      canvas.drawPath(flutterPath, dashedPaint);
+    } else {
+      canvas.drawPath(flutterPath, fillPaint);
+      canvas.drawPath(flutterPath, strokePaint);
+    }
+
+    canvas.restore();
+  }
+
+  /// Get the current morphed path based on progress
+  SvgPath _getCurrentPath() {
+    if (endPath == null) {
+      return startPath;
+    }
+
+    final progress = properties.morphProgress.value;
+    if (progress <= 0.0) {
+      return startPath;
+    } else if (progress >= 1.0) {
+      return endPath!;
+    } else {
+      return SvgPathInterpolator.interpolate(startPath, endPath!, progress);
+    }
   }
 }
 
@@ -276,6 +329,59 @@ KitoSvg svgRect({
 }) {
   return KitoSvg(
     shape: SvgRectShape(properties, rect, borderRadius: borderRadius),
+    size: size,
+  );
+}
+
+/// Create an SVG path morph animation with proper interpolation
+///
+/// Example:
+/// ```dart
+/// final star = SvgPath.fromString('M 0,0 L 10,30 L 30,10 Z');
+/// final circle = SvgPath.fromString('M 15,0 A 15,15 0 1,0 15,30 A 15,15 0 1,0 15,0 Z');
+///
+/// final props = SvgAnimationProperties();
+/// final widget = svgMorphPath(
+///   startPath: star,
+///   endPath: circle,
+///   properties: props,
+/// );
+///
+/// // Animate the morph
+/// animate()
+///   .to(props.morphProgress, 1.0)
+///   .withDuration(1000)
+///   .build()
+///   .play();
+/// ```
+KitoSvg svgMorphPath({
+  required SvgPath startPath,
+  SvgPath? endPath,
+  required SvgAnimationProperties properties,
+  Size? size,
+}) {
+  return KitoSvg(
+    shape: SvgMorphShape(properties, startPath, endPath: endPath),
+    size: size,
+  );
+}
+
+/// Create an SVG path morph animation from path strings
+///
+/// Convenience method that parses SVG path data strings
+KitoSvg svgMorphPathString({
+  required String startPathData,
+  String? endPathData,
+  required SvgAnimationProperties properties,
+  Size? size,
+}) {
+  final startPath = SvgPath.fromString(startPathData);
+  final endPath = endPathData != null ? SvgPath.fromString(endPathData) : null;
+
+  return svgMorphPath(
+    startPath: startPath,
+    endPath: endPath,
+    properties: properties,
     size: size,
   );
 }

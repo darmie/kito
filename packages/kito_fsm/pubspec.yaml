@@ -1,0 +1,31 @@
+name: kito_fsm
+description: Type-safe finite state machine library for Kito with reactive primitives
+version: 0.1.0
+repository: https://github.com/darmie/kito
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Reactive primitives (extracted from kito)
+  kito_reactive:
+    path: ../kito_reactive
+
+  meta: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.0
+  flutter_lints: ^3.0.0
+
+# Exclude archived test files from analysis
+analyzer:
+  exclude:
+    - test_archive/**
+
+flutter:
