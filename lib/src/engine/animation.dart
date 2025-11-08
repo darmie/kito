@@ -5,6 +5,7 @@ import '../types/types.dart';
 import '../easing/easing.dart';
 import 'animatable.dart';
 import 'keyframe.dart';
+import 'animation_fsm.dart';
 
 /// Configuration for an animation target
 class AnimationTarget<T> {
@@ -37,234 +38,129 @@ class AnimationTarget<T> {
 }
 
 /// Main animation class that integrates with the reactive system
+/// Now powered by kito_fsm for declarative state management
 class KitoAnimation {
-  /// Animation targets
-  final List<AnimationTarget> _targets;
-
-  /// Duration in milliseconds
-  final int duration;
-
-  /// Delay before starting in milliseconds
-  final int delay;
-
-  /// Default easing function
-  final EasingFunction easing;
-
-  /// Number of times to loop (-1 for infinite)
-  final int loop;
-
-  /// Animation direction
-  final AnimationDirection direction;
-
-  /// Whether to automatically play the animation
-  final bool autoplay;
-
-  /// Update callback
-  final AnimationCallback? onUpdate;
-
-  /// Complete callback
-  final AnimationCompleteCallback? onComplete;
-
-  /// Begin callback
-  final AnimationCompleteCallback? onBegin;
-
-  // Reactive state
-  final Signal<double> _progress = Signal(0.0);
-  final Signal<AnimationState> _state = Signal(AnimationState.idle);
-  final Signal<int> _currentLoop = Signal(0);
-
-  // Ticker
-  Ticker? _ticker;
-  Duration? _startTime;
-  Duration? _pausedAt;
-  bool _reversed = false;
-  int _loopCount = 0;
+  late final AnimationStateMachine _fsm;
+  late final AnimationContext _context;
 
   /// Create an animation
   KitoAnimation({
     required List<AnimationTarget> targets,
-    this.duration = 1000,
-    this.delay = 0,
-    this.easing = Easing.linear,
-    this.loop = 1,
-    this.direction = AnimationDirection.forward,
-    this.autoplay = false,
-    this.onUpdate,
-    this.onComplete,
-    this.onBegin,
-  }) : _targets = targets {
+    int duration = 1000,
+    int delay = 0,
+    EasingFunction easing = Easing.linear,
+    int loop = 1,
+    AnimationDirection direction = AnimationDirection.forward,
+    bool autoplay = false,
+    AnimationCallback? onUpdate,
+    AnimationCompleteCallback? onComplete,
+    AnimationCompleteCallback? onBegin,
+  }) {
+    _context = AnimationContext(
+      targets: targets,
+      duration: duration,
+      delay: delay,
+      easing: easing,
+      loop: loop,
+      direction: direction,
+      onUpdate: onUpdate,
+      onComplete: onComplete,
+      onBegin: onBegin,
+    );
+
+    _fsm = AnimationStateMachine(_context);
+
+    // Set up effect to manage ticker based on FSM state
+    effect(() {
+      final state = _fsm.currentState.value;
+
+      if (state == AnimState.playing && _context.ticker == null) {
+        _context.ticker = Ticker(_fsm.handleTick);
+        _context.ticker!.start();
+      } else if (state != AnimState.playing && _context.ticker != null) {
+        // Ticker cleanup happens in FSM state exit actions
+      }
+    });
+
     if (autoplay) {
       play();
     }
   }
 
-  /// Current progress (0.0 to 1.0)
-  double get progress => _progress.value;
+  /// Current progress (0.0 to 1.0) as a reactive signal
+  Computed<double> get progress => computed(() {
+    // Trigger recomputation when state changes (which happens on ticks)
+    _fsm.currentState.value;
+    return _context.progress;
+  });
 
-  /// Current animation state
-  AnimationState get state => _state.value;
+  /// Current progress value (non-reactive)
+  double get progressValue => _context.progress;
 
-  /// Current loop iteration
-  int get currentLoop => _currentLoop.value;
+  /// Current animation state as reactive signal
+  Signal<AnimState> get currentState => _fsm.currentState;
+
+  /// Current animation state (backward compatible)
+  AnimationState get state => _animStateToLegacy(_fsm.currentState.value);
+
+  /// Current loop iteration as reactive computed
+  Computed<int> get currentLoop => computed(() {
+    _fsm.currentState.value;
+    return _context.currentLoop;
+  });
+
+  /// Current loop value (non-reactive)
+  int get currentLoopValue => _context.currentLoop;
 
   /// Play the animation
-  void play() {
-    if (_state.value == AnimationState.playing) return;
-
-    _state.value = AnimationState.playing;
-
-    if (_pausedAt != null) {
-      // Resume from pause
-      _ticker = Ticker(_tick);
-      _startTime = null;
-      _ticker!.start();
-    } else {
-      // Start fresh
-      if (_state.value == AnimationState.idle) {
-        onBegin?.call();
-      }
-
-      _ticker = Ticker(_tick);
-      _startTime = null;
-      _ticker!.start();
-    }
-  }
+  void play() => _fsm.send(AnimEvent.play);
 
   /// Pause the animation
-  void pause() {
-    if (_state.value != AnimationState.playing) return;
-
-    _state.value = AnimationState.paused;
-    _ticker?.stop();
-  }
+  void pause() => _fsm.send(AnimEvent.pause);
 
   /// Restart the animation from the beginning
-  void restart() {
-    _loopCount = 0;
-    _currentLoop.value = 0;
-    _reversed = direction == AnimationDirection.reverse;
-    _startTime = null;
-    _pausedAt = null;
-    _progress.value = 0.0;
-
-    if (_state.value == AnimationState.playing) {
-      _ticker?.stop();
-    }
-
-    play();
-  }
+  void restart() => _fsm.send(AnimEvent.restart);
 
   /// Seek to a specific progress (0.0 to 1.0)
   void seek(double targetProgress) {
-    _progress.value = targetProgress.clamp(0.0, 1.0);
-    _updateTargets();
+    _context.progress = targetProgress.clamp(0.0, 1.0);
+    AnimationStateMachine.updateTargets(_context);
   }
 
+  /// Duration in milliseconds (for Timeline compatibility)
+  int get duration => _context.duration;
+
+  /// Delay in milliseconds (for Timeline compatibility)
+  int get delay => _context.delay;
+
   /// Stop and reset the animation
-  void stop() {
-    _ticker?.stop();
-    _ticker?.dispose();
-    _ticker = null;
-    _state.value = AnimationState.idle;
-    _progress.value = 0.0;
-    _startTime = null;
-    _pausedAt = null;
-    _loopCount = 0;
-    _currentLoop.value = 0;
-  }
+  void stop() => _fsm.send(AnimEvent.stop);
 
   /// Dispose the animation
   void dispose() {
     stop();
+    _fsm.dispose();
   }
 
-  /// Tick callback for the animation
-  void _tick(Duration elapsed) {
-    _startTime ??= elapsed;
-
-    final actualElapsed = elapsed - _startTime!;
-    final totalDuration = delay + duration;
-    final millisElapsed = actualElapsed.inMilliseconds;
-
-    // Handle delay
-    if (millisElapsed < delay) {
-      return;
-    }
-
-    // Calculate progress
-    final animationElapsed = millisElapsed - delay;
-    var rawProgress = (animationElapsed / duration).clamp(0.0, 1.0);
-
-    // Apply direction
-    if (_reversed) {
-      rawProgress = 1.0 - rawProgress;
-    }
-
-    _progress.value = rawProgress;
-    _updateTargets();
-
-    // Check if animation is complete
-    if (millisElapsed >= totalDuration) {
-      _handleAnimationComplete();
+  /// Map FSM AnimState to legacy AnimationState enum
+  AnimationState _animStateToLegacy(AnimState state) {
+    switch (state) {
+      case AnimState.idle:
+        return AnimationState.idle;
+      case AnimState.playing:
+        return AnimationState.playing;
+      case AnimState.paused:
+        return AnimationState.paused;
+      case AnimState.completed:
+        return AnimationState.completed;
     }
   }
 
-  /// Update all animation targets
-  void _updateTargets() {
-    for (final target in _targets) {
-      _updateTarget(target);
-    }
-    onUpdate?.call(_progress.value);
-  }
+  /// Access to FSM for advanced use cases
+  AnimationStateMachine get fsm => _fsm;
 
-  /// Update a single animation target
-  void _updateTarget(AnimationTarget target) {
-    final targetEasing = target.easing ?? easing;
-    final easedProgress = targetEasing(_progress.value);
-
-    if (target.keyframes != null && target.keyframes!.isNotEmpty) {
-      // Keyframe-based animation
-      final value = interpolateKeyframes(
-        target.keyframes!,
-        easedProgress,
-        target.property.interpolate,
-        targetEasing,
-      );
-      target.property.value = value;
-    } else if (target.endValue != null) {
-      // Simple from-to animation
-      final startValue = target.property.value;
-      final value = target.property.interpolate(
-        startValue,
-        target.endValue!,
-        easedProgress,
-      );
-      target.property.value = value;
-    }
-  }
-
-  /// Handle animation completion
-  void _handleAnimationComplete() {
-    _loopCount++;
-
-    // Check if we should loop
-    if (loop == -1 || _loopCount < loop) {
-      _currentLoop.value = _loopCount;
-
-      // Handle alternating direction
-      if (direction == AnimationDirection.alternate) {
-        _reversed = !_reversed;
-      }
-
-      // Restart
-      _startTime = null;
-    } else {
-      // Animation fully complete
-      _ticker?.stop();
-      _state.value = AnimationState.completed;
-      onComplete?.call();
-    }
-  }
+  /// Access to context for advanced use cases
+  AnimationContext get context => _context;
 }
 
 /// Builder for creating animations with a fluent API
