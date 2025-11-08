@@ -22,6 +22,7 @@ class InteractiveDemoScreen extends StatelessWidget {
         children: const [
           _PullToRefreshDemo(),
           _DragShuffleListDemo(),
+          _DragShuffleGridDemo(),
         ],
       ),
     );
@@ -413,6 +414,302 @@ fsm.dispatch(DragShuffleEvent.drop);''',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Drag-Shuffle Grid Demo
+class _DragShuffleGridDemo extends StatefulWidget {
+  const _DragShuffleGridDemo();
+
+  @override
+  State<_DragShuffleGridDemo> createState() => _DragShuffleGridDemoState();
+}
+
+class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
+  final gridItems = List.generate(9, (i) => i + 1);
+  final gridPositions = <int, AnimatableProperty<Offset>>{};
+  int? draggingIndex;
+  int swapCount = 0;
+  GridRepositionMode currentMode = GridRepositionMode.wave;
+
+  final columns = 3;
+  final itemSize = 55.0;
+  final gap = 8.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPositions();
+  }
+
+  void _initPositions() {
+    for (var i = 0; i < gridItems.length; i++) {
+      final row = i ~/ columns;
+      final col = i % columns;
+      gridPositions[i] = animatableOffset(
+        Offset(col * (itemSize + gap), row * (itemSize + gap)),
+      );
+    }
+  }
+
+  Offset _getPositionForIndex(int index) {
+    final row = index ~/ columns;
+    final col = index % columns;
+    return Offset(col * (itemSize + gap), row * (itemSize + gap));
+  }
+
+  void _trigger() {
+    // Reset
+    swapCount = 0;
+    setState(() {
+      for (var i = 0; i < gridItems.length; i++) {
+        gridItems[i] = i + 1;
+      }
+    });
+
+    // Simulate grid shuffle sequence
+    _simulateGridShuffle();
+  }
+
+  void _simulateGridShuffle() async {
+    // Shuffle: swap corners
+    await _animateGridSwap(0, 8); // Top-left with bottom-right
+    await Future.delayed(const Duration(milliseconds: 900));
+
+    // Shuffle: swap middle edges
+    await _animateGridSwap(1, 7); // Top-middle with bottom-middle
+    await Future.delayed(const Duration(milliseconds: 900));
+
+    // Shuffle: swap center with corner
+    await _animateGridSwap(4, 2); // Center with top-right
+  }
+
+  Future<void> _animateGridSwap(int index1, int index2) async {
+    setState(() {
+      draggingIndex = index1;
+      swapCount++;
+    });
+
+    // Get target positions
+    final targetPos1 = _getPositionForIndex(index2);
+    final targetPos2 = _getPositionForIndex(index1);
+
+    // Determine animation delays based on mode
+    final delays = _calculateDelays(index1, index2);
+
+    // Animate with stagger
+    Future.delayed(Duration(milliseconds: delays[index1]), () {
+      final anim1 = animate()
+          .to(gridPositions[index1]!, targetPos1)
+          .withDuration(450)
+          .withEasing(Easing.easeInOutCubic)
+          .build();
+      anim1.play();
+    });
+
+    Future.delayed(Duration(milliseconds: delays[index2]), () {
+      final anim2 = animate()
+          .to(gridPositions[index2]!, targetPos2)
+          .withDuration(450)
+          .withEasing(Easing.easeInOutCubic)
+          .build();
+      anim2.play();
+    });
+
+    // Swap in items array
+    await Future.delayed(const Duration(milliseconds: 300));
+    setState(() {
+      final temp = gridItems[index1];
+      gridItems[index1] = gridItems[index2];
+      gridItems[index2] = temp;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    setState(() {
+      draggingIndex = null;
+    });
+  }
+
+  Map<int, int> _calculateDelays(int index1, int index2) {
+    final delays = <int, int>{};
+
+    switch (currentMode) {
+      case GridRepositionMode.simultaneous:
+        delays[index1] = 0;
+        delays[index2] = 0;
+        break;
+
+      case GridRepositionMode.wave:
+        final row1 = index1 ~/ columns;
+        final row2 = index2 ~/ columns;
+        delays[index1] = row1 * 50;
+        delays[index2] = row2 * 50;
+        break;
+
+      case GridRepositionMode.radial:
+        // Delay based on distance from center
+        final center = 4; // Middle of 3x3 grid
+        final dist1 = (index1 - center).abs();
+        final dist2 = (index2 - center).abs();
+        delays[index1] = dist1 * 40;
+        delays[index2] = dist2 * 40;
+        break;
+
+      case GridRepositionMode.rowByRow:
+        final row1 = index1 ~/ columns;
+        final row2 = index2 ~/ columns;
+        delays[index1] = row1 * 80;
+        delays[index2] = row2 * 80;
+        break;
+
+      case GridRepositionMode.columnByColumn:
+        final col1 = index1 % columns;
+        final col2 = index2 % columns;
+        delays[index1] = col1 * 80;
+        delays[index2] = col2 * 80;
+        break;
+    }
+
+    return delays;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DemoCard(
+      title: 'Drag-Shuffle Grid',
+      description: 'Reorderable 2D grid items',
+      onTrigger: _trigger,
+      codeSnippet: '''final fsm = DragShuffleGridStateMachine(
+  items: items,
+  positions: positions,
+  config: DragShuffleGridConfig(
+    columns: 3,
+    itemWidth: 50,
+    itemHeight: 50,
+    repositionMode: GridRepositionMode.wave,
+  ),
+);
+
+// User drags grid item
+fsm.dispatch(DragShuffleEvent.startDrag);
+fsm.dispatch(DragShuffleEvent.drop);''',
+      child: ReactiveBuilder(
+        builder: (_) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: columns * (itemSize + gap),
+                height: columns * (itemSize + gap),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.background,
+                  borderRadius: BorderRadius.circular(2),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                  ),
+                ),
+                child: Stack(
+                  children: List.generate(gridItems.length, (i) {
+                    final isDragging = draggingIndex == i;
+                    final position = gridPositions[i]!.value;
+
+                    return Positioned(
+                      left: position.dx,
+                      top: position.dy,
+                      child: Transform.scale(
+                        scale: isDragging ? 1.08 : 1.0,
+                        child: Transform.rotate(
+                          angle: isDragging ? 0.05 : 0.0,
+                          child: Opacity(
+                            opacity: isDragging ? 0.9 : 1.0,
+                            child: Container(
+                              width: itemSize,
+                              height: itemSize,
+                              decoration: BoxDecoration(
+                                color: isDragging
+                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                                    : Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: isDragging
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                  width: isDragging ? 2 : 1,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${gridItems[i]}',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: isDragging ? FontWeight.w700 : FontWeight.w600,
+                                    color: isDragging
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Mode selector
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                alignment: WrapAlignment.center,
+                children: [
+                  _modeChip(context, GridRepositionMode.wave, 'Wave'),
+                  _modeChip(context, GridRepositionMode.simultaneous, 'Simul'),
+                  _modeChip(context, GridRepositionMode.radial, 'Radial'),
+                  _modeChip(context, GridRepositionMode.rowByRow, 'Row'),
+                  _modeChip(context, GridRepositionMode.columnByColumn, 'Col'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (swapCount > 0)
+                Text(
+                  'Swaps: $swapCount',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _modeChip(BuildContext context, GridRepositionMode mode, String label) {
+    return GestureDetector(
+      onTap: () => setState(() => currentMode = mode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: currentMode == mode
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(
+            color: currentMode == mode
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 10,
+            fontWeight: currentMode == mode ? FontWeight.w600 : FontWeight.normal,
+            color: currentMode == mode ? Theme.of(context).colorScheme.primary : null,
           ),
         ),
       ),
