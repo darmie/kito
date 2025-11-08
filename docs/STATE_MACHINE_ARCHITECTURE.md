@@ -1,9 +1,11 @@
 # Kito State Machine Architecture & Implementation Specification
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Draft
 **Last Updated:** 2025-11-08
-**Update:** Added context-based guards and actions (v1.1)
+**Updates:**
+- v1.1: Added context-based guards and actions
+- v1.2: Added labelled events with namespace support (XState-style)
 
 ---
 
@@ -15,7 +17,10 @@ This document specifies the architecture and implementation for **Kito State Mac
 - Type-safe state machines with compile-time validation
 - Seamless integration with Kito's reactive animation engine
 - YAML-based DSL with code generation to typed Dart
-- Transient states with automatic transitions
+- Context-based guards and actions with generics
+- **Labelled events** with XState-style namespace support
+- Transient states with automatic event generation
+- Hierarchical state machines with event bubbling
 - Guarded transitions with custom predicates
 - Observable state changes via Kito's reactive primitives
 - **Temporals**: ZIP-compatible proxy actors for workflow orchestration
@@ -87,7 +92,8 @@ A **finite state machine (FSM)** consists of:
 - **Initial State**: The starting state
 - **Context**: Typed state container accessible to guards and actions
 - **Guards**: Pure static functions that conditionally allow/block transitions
-- **Actions**: Pure static functions that transform context (or side effects on entry/exit)
+- **Actions**: Static functions that transform context (simple or enhanced with ActionContext)
+- **Labelled Events**: Namespaced events emitted by actions or declared in transitions
 
 ### Kito-Specific Concepts
 
@@ -171,6 +177,56 @@ class ButtonStateMachine extends KitoStateMachine<
 - ✅ Composable and reusable
 
 See [CONTEXT_BASED_GUARDS.md](./CONTEXT_BASED_GUARDS.md) for detailed documentation.
+
+#### **Labelled Events & Namespacing**
+
+Events are automatically namespaced based on state hierarchy and transient states, similar to XState:
+
+```yaml
+# Hierarchical states
+states:
+  auth:
+    states:
+      idle:
+        on:
+          START:  # → auth.idle.START
+            target: auth.checking
+
+      checking:
+        # Transient state auto-generates: auth.checking.DONE
+        transient:
+          condition: AuthGuards.hasSession
+          target: auth.authenticated
+          emit: auth.checking.SUCCESS  # Labelled event
+
+# Generated enum
+enum AuthEvent {
+  authIdleStart,            // Explicit event
+  authCheckingDone,         // Auto-generated from transient
+  authCheckingSuccess,      // Labelled event
+}
+```
+
+**Actions can emit events:**
+```dart
+static AuthContext checkSession(
+  ActionContext<AuthState, AuthEvent, AuthContext> actx
+) {
+  if (actx.context.hasValidToken) {
+    actx.emit(AuthEvent.authCheckingSuccess);  // Emit namespaced event
+  }
+  return actx.context;
+}
+```
+
+**Benefits:**
+- ✅ Organized event hierarchy
+- ✅ Auto-generated transient events
+- ✅ Type-safe event emission
+- ✅ Cascading state transitions
+- ✅ Wildcard event matching (`*.ERROR`)
+
+See [LABELLED_EVENTS.md](./LABELLED_EVENTS.md) for comprehensive documentation.
 
 ### Temporals
 
