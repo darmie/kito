@@ -1,0 +1,33 @@
+name: kito_patterns
+description: Pre-built state machine patterns for common UI interactions with animation support
+version: 0.1.0
+repository: https://github.com/darmie/kito
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Reactive primitives
+  kito_reactive:
+    path: ../kito_reactive
+
+  # State machine library
+  kito_fsm:
+    path: ../kito_fsm
+
+  # Animation library
+  kito:
+    path: ../..
+
+  meta: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
