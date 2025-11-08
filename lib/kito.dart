@@ -28,5 +28,10 @@ export 'src/targets/svg_target.dart';
 export 'src/svg/svg_path.dart';
 export 'src/svg/svg_path_animatable.dart';
 
+// Performance profiling
+export 'src/profiling/animation_profiler.dart';
+export 'src/profiling/performance_overlay.dart';
+export 'src/profiling/profiled_animation.dart';
+
 // Types
 export 'src/types/types.dart';

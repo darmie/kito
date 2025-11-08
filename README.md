@@ -451,6 +451,55 @@ animate()
 - Smooth interpolation between any shapes
 - Type-safe animatable SVG path property
 
+### Performance Profiling
+
+Profile animations to optimize performance and detect bottlenecks:
+
+```dart
+import 'package:kito/kito.dart';
+
+// Enable automatic profiling
+AnimationProfiler().enableAutoProfiling();
+
+// Profile a specific animation
+final animation = animate()
+  .to(scale, 1.5)
+  .withDuration(1000)
+  .build()
+  .withProfiling('my-animation');
+
+animation.onComplete(() {
+  final metrics = AnimationProfiler().getMetrics('my-animation');
+  print('Average FPS: ${metrics?.averageFps}');
+  print('Dropped frames: ${metrics?.droppedFrames}');
+  print('Is performant: ${metrics?.isPerformant}');
+});
+
+animation.play();
+
+// Use performance overlay for real-time monitoring
+KitoPerformanceOverlay(
+  enabled: true,
+  position: PerformanceOverlayPosition.topRight,
+  child: YourApp(),
+);
+
+// View detailed metrics with stats widget
+PerformanceStats(metrics: metrics);
+
+// Visualize frame timings
+FrameTimeline(frameTimings: metrics.frameTimings);
+```
+
+**Features:**
+- Real-time FPS monitoring overlay with graph
+- Detailed per-animation metrics (FPS, frame times, dropped frames)
+- Automatic performance issue detection
+- Frame timeline visualization
+- Batch profiling for multiple animations
+- Performance thresholds and warnings
+- Zero overhead when disabled
+
 ## 🎯 Showcase
 
 Kito enables powerful interactive animations with minimal code:
@@ -857,6 +906,48 @@ svgMorphPathString({
 // Z/z - Close path
 ```
 
+### Performance Profiling
+
+```dart
+// Enable/disable profiling
+AnimationProfiler().enableAutoProfiling()
+AnimationProfiler().disableAutoProfiling()
+
+// Profile animations
+animation.withProfiling(animationId)
+AnimationProfiler().startProfiling(animationId)
+AnimationProfiler().recordFrame(animationId, frameDuration)
+AnimationProfiler().stopProfiling(animationId)
+
+// Get metrics
+AnimationProfiler().getMetrics(animationId) → AnimationMetrics?
+AnimationProfiler().getAllMetrics() → Map<String, AnimationMetrics>
+AnimationProfiler().getSummary() → ProfilingSummary
+
+// Performance overlay
+KitoPerformanceOverlay({
+  child: Widget,
+  enabled: bool,
+  position: PerformanceOverlayPosition,
+})
+
+// Metrics widgets
+PerformanceStats(metrics: AnimationMetrics)
+FrameTimeline(frameTimings: List<FrameTiming>)
+
+// Batch profiling
+BatchProfiler.startBatch(animationIds)
+BatchProfiler.stopBatch() → List<AnimationMetrics>
+BatchProfiler.getSummary()
+
+// Performance thresholds
+PerformanceThresholds({
+  minFps: double,           // default: 55.0
+  maxDroppedFramePercent: double,  // default: 0.05
+  maxFrameTimeMs: double,   // default: 16.67
+})
+```
+
 ## Examples
 
 The `demo/` directory contains comprehensive examples organized by complexity:
@@ -915,7 +1006,7 @@ flutter test
 - [x] Spring physics animations (basic implementation complete)
 - [x] Integration with Flutter's AnimationController
 - [x] SVG path morphing (advanced)
-- [ ] Performance profiling tools
+- [x] Performance profiling tools
 - [ ] Enhanced documentation and tutorials
 
 ## Contributing
