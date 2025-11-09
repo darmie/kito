@@ -1440,12 +1440,14 @@ class _OnboardingFlowDemo extends StatefulWidget {
 
 class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
   List<OnboardingPage> pages = [];
-  int currentPage = 0;
-  bool isAnimating = false;
+  late final Signal<int> currentPage;
+  late final Signal<bool> isAnimating;
 
   @override
   void initState() {
     super.initState();
+    currentPage = signal<int>(0);
+    isAnimating = signal<bool>(false);
     _initializePages();
     _showPage(0);
   }
@@ -1474,7 +1476,7 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
   }
 
   void _trigger() {
-    if (currentPage < pages.length - 1) {
+    if (currentPage.value < pages.length - 1) {
       _nextPage();
     } else {
       _restart();
@@ -1498,12 +1500,12 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
   }
 
   Future<void> _nextPage() async {
-    if (isAnimating || currentPage >= pages.length - 1) return;
+    if (isAnimating.value || currentPage.value >= pages.length - 1) return;
 
-    setState(() => isAnimating = true);
+    isAnimating.value = true;
 
     // Slide current page out to the left
-    final currentPageObj = pages[currentPage];
+    final currentPageObj = pages[currentPage.value];
     final slideOutAnim = animate()
         .to(currentPageObj.position, const Offset(-400, 0))
         .to(currentPageObj.opacity, 0.0)
@@ -1516,10 +1518,10 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
     await Future.delayed(const Duration(milliseconds: 200));
 
     // Prepare next page
-    setState(() => currentPage++);
+    currentPage.value++;
 
     // Reset position for next page (start from right)
-    final nextPageObj = pages[currentPage];
+    final nextPageObj = pages[currentPage.value];
     nextPageObj.position.value = const Offset(400, 0);
     nextPageObj.opacity.value = 0.0;
     nextPageObj.scale.value = 0.8;
@@ -1538,16 +1540,16 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
     slideInAnim.play();
 
     await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => isAnimating = false);
+    isAnimating.value = false;
   }
 
   Future<void> _previousPage() async {
-    if (isAnimating || currentPage <= 0) return;
+    if (isAnimating.value || currentPage.value <= 0) return;
 
-    setState(() => isAnimating = true);
+    isAnimating.value = true;
 
     // Slide current page out to the right
-    final currentPageObj = pages[currentPage];
+    final currentPageObj = pages[currentPage.value];
     final slideOutAnim = animate()
         .to(currentPageObj.position, const Offset(400, 0))
         .to(currentPageObj.opacity, 0.0)
@@ -1560,10 +1562,10 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
     await Future.delayed(const Duration(milliseconds: 200));
 
     // Prepare previous page
-    setState(() => currentPage--);
+    currentPage.value--;
 
     // Reset position for previous page (start from left)
-    final prevPageObj = pages[currentPage];
+    final prevPageObj = pages[currentPage.value];
     prevPageObj.position.value = const Offset(-400, 0);
     prevPageObj.opacity.value = 0.0;
     prevPageObj.scale.value = 0.8;
@@ -1582,16 +1584,16 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
     slideInAnim.play();
 
     await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => isAnimating = false);
+    isAnimating.value = false;
   }
 
   Future<void> _restart() async {
-    if (isAnimating) return;
+    if (isAnimating.value) return;
 
-    setState(() => isAnimating = true);
+    isAnimating.value = true;
 
     // Fade out current page
-    final currentPageObj = pages[currentPage];
+    final currentPageObj = pages[currentPage.value];
     final fadeOutAnim = animate()
         .to(currentPageObj.opacity, 0.0)
         .to(currentPageObj.scale, 0.8)
@@ -1604,7 +1606,7 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
     await Future.delayed(const Duration(milliseconds: 300));
 
     // Reset to first page
-    setState(() => currentPage = 0);
+    currentPage.value = 0;
 
     // Reset all pages
     for (var page in pages) {
@@ -1619,7 +1621,7 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
     _showPage(0);
 
     await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => isAnimating = false);
+    isAnimating.value = false;
   }
 
   @override
@@ -1649,10 +1651,10 @@ sequential([slideOut, slideIn]);
 ''',
       child: ClickableDemo(
         onTrigger: _trigger,
-        builder: (_) => ReactiveBuilder(
-        builder: (context) {
-          return _buildOnboarding(context);
-        },
+        builder: (context) => ReactiveBuilder(
+          builder: (_) {
+            return _buildOnboarding(context);
+          },
         ),
       ),
     );
@@ -1672,7 +1674,7 @@ sequential([slideOut, slideIn]);
                   final index = entry.key;
                   final page = entry.value;
 
-                  if (index != currentPage) {
+                  if (index != currentPage.value) {
                     return const SizedBox.shrink();
                   }
 
@@ -1695,7 +1697,7 @@ sequential([slideOut, slideIn]);
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: index == currentPage
+                  color: index == currentPage.value
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context)
                           .colorScheme
@@ -1714,7 +1716,7 @@ sequential([slideOut, slideIn]);
             children: [
               OutlinedButton(
                 onPressed:
-                    currentPage > 0 && !isAnimating ? _previousPage : null,
+                    currentPage.value > 0 && !isAnimating.value ? _previousPage : null,
                 style: OutlinedButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1724,7 +1726,7 @@ sequential([slideOut, slideIn]);
                 child: const Text('Back', style: TextStyle(fontSize: 12)),
               ),
               FilledButton(
-                onPressed: !isAnimating ? _trigger : null,
+                onPressed: !isAnimating.value ? _trigger : null,
                 style: FilledButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1732,7 +1734,7 @@ sequential([slideOut, slideIn]);
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  currentPage < pages.length - 1 ? 'Next' : 'Restart',
+                  currentPage.value < pages.length - 1 ? 'Next' : 'Restart',
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
