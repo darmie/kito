@@ -360,11 +360,12 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
 
   Widget _buildChart({
     required String label,
-    required Signal<List<DataPoint>> data,
+    required List<DataPoint> dataPoints,
     required CanvasAnimationProperties props,
     required Color lineColor,
     required Color gradientStart,
     required Color gradientEnd,
+    required double scrollOffset,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,13 +387,13 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
               return KitoCanvas(
                 painter: ScrollingAreaChartPainter(
                   props,
-                  dataPoints: data.value,
+                  dataPoints: dataPoints,
                   minValue: 0.0,
                   maxValue: 100.0,
                   lineColor: lineColor,
                   gradientStartColor: gradientStart,
                   gradientEndColor: gradientEnd,
-                  scrollOffset: scrollProps.rotation.value,
+                  scrollOffset: scrollOffset,
                 ),
                 size: Size(constraints.maxWidth, constraints.maxHeight),
                 willChange: true,
@@ -433,6 +434,12 @@ Timer.periodic(Duration(milliseconds: 200), (_) {
         builder: (context) => Builder(
           builder: (builderContext) => ReactiveBuilder(
             builder: (_) {
+              // Access all signals here to establish reactive dependencies
+              final cpuDataValue = cpuData.value;
+              final memoryDataValue = memoryData.value;
+              final networkDataValue = networkData.value;
+              final scrollOffsetValue = scrollProps.rotation.value;
+
               return SizedBox(
                 height: 300,
                 child: Column(
@@ -440,33 +447,36 @@ Timer.periodic(Duration(milliseconds: 200), (_) {
                     Expanded(
                       child: _buildChart(
                         label: 'CPU Usage',
-                        data: cpuData,
+                        dataPoints: cpuDataValue,
                         props: cpuProps,
                         lineColor: const Color(0xFF3498DB),
                         gradientStart: const Color(0xFF3498DB),
                         gradientEnd: const Color(0xFF3498DB),
+                        scrollOffset: scrollOffsetValue,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Expanded(
                       child: _buildChart(
                         label: 'Memory',
-                        data: memoryData,
+                        dataPoints: memoryDataValue,
                         props: memoryProps,
                         lineColor: const Color(0xFF9B59B6),
                         gradientStart: const Color(0xFF9B59B6),
                         gradientEnd: const Color(0xFF9B59B6),
+                        scrollOffset: scrollOffsetValue,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Expanded(
                       child: _buildChart(
                         label: 'Network',
-                        data: networkData,
+                        dataPoints: networkDataValue,
                         props: networkProps,
                         lineColor: const Color(0xFF2ECC71),
                         gradientStart: const Color(0xFF2ECC71),
                         gradientEnd: const Color(0xFF2ECC71),
+                        scrollOffset: scrollOffsetValue,
                       ),
                     ),
                   ],
