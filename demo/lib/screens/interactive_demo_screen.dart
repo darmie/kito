@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
 import '../widgets/demo_card.dart';
+import '../widgets/clickable_demo.dart';
 
 class InteractiveDemoScreen extends StatelessWidget {
   const InteractiveDemoScreen({super.key});
@@ -43,95 +44,106 @@ class _PullToRefreshDemoState extends State<_PullToRefreshDemo> {
   late final refreshOpacity = animatableDouble(0.0);
   late final refreshScale = animatableDouble(1.0);
 
-  bool isRefreshing = false;
-  bool isPulling = false;
+  late final Signal<bool> isRefreshing;
+  late final Signal<int> refreshCount;
   final threshold = 80.0;
-  int refreshCount = 0;
+  KitoAnimation? currentAnimation;
 
-  void _trigger() {
-    // Reset
-    refreshCount = 0;
-    isPulling = false;
-    isRefreshing = false;
-
-    // Simulate pull-to-refresh sequence
-    _simulatePull();
+  @override
+  void initState() {
+    super.initState();
+    isRefreshing = signal(false);
+    refreshCount = signal(0);
   }
 
-  void _simulatePull() async {
-    isPulling = true;
+  void _onVerticalDragUpdate(DragUpdateDetails details) {
+    if (isRefreshing.value) return;
 
-    // Pull down animation
-    final pullAnim = animate()
-        .to(pullOffset, threshold + 20)
-        .to(refreshOpacity, 1.0)
-        .to(refreshScale, 1.2)
-        .withDuration(800)
-        .withEasing(Easing.easeOutCubic)
-        .build();
+    // Update pull offset based on drag
+    final newOffset = (pullOffset.value + details.delta.dy).clamp(0.0, threshold + 40);
+    pullOffset.value = newOffset;
 
-    pullAnim.play();
+    // Update indicator visibility and scale
+    final progress = (newOffset / threshold).clamp(0.0, 1.0);
+    refreshOpacity.value = progress;
+    refreshScale.value = 0.8 + (progress * 0.4); // Scale from 0.8 to 1.2
+  }
 
-    // Start rotating
-    _startRotation();
+  void _onVerticalDragEnd(DragEndDetails details) {
+    if (isRefreshing.value) return;
 
-    // Wait then release
-    await Future.delayed(const Duration(milliseconds: 1000));
+    if (pullOffset.value >= threshold) {
+      // Trigger refresh
+      _startRefresh();
+    } else {
+      // Snap back
+      _snapBack();
+    }
+  }
 
-    // Trigger refresh
-    setState(() => isRefreshing = true);
+  void _startRefresh() async {
+    isRefreshing.value = true;
 
     // Snap to threshold
-    final snapAnim = animate()
+    currentAnimation?.stop();
+    currentAnimation = animate()
         .to(pullOffset, threshold)
         .to(refreshScale, 1.0)
         .withDuration(300)
         .withEasing(Easing.easeOutBack)
         .build();
+    currentAnimation!.play();
 
-    snapAnim.play();
+    // Start rotation
+    _startRotation();
 
     // Simulate refresh work
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(milliseconds: 2000));
 
     // Complete
-    setState(() {
-      isRefreshing = false;
-      isPulling = false;
-      refreshCount++;
-    });
+    isRefreshing.value = false;
+    refreshCount.value++;
 
-    // Hide animation
-    final hideAnim = animate()
+    // Hide
+    _snapBack();
+  }
+
+  void _snapBack() {
+    currentAnimation?.stop();
+    currentAnimation = animate()
         .to(pullOffset, 0.0)
         .to(refreshOpacity, 0.0)
         .to(refreshRotation, 0.0)
+        .to(refreshScale, 1.0)
         .withDuration(400)
-        .withEasing(Easing.easeInCubic)
+        .withEasing(Easing.easeOutCubic)
         .build();
-
-    hideAnim.play();
+    currentAnimation!.play();
   }
 
   void _startRotation() {
-    if (isRefreshing || isPulling) {
-      final rotAnim = animate()
-          .to(refreshRotation, refreshRotation.value + 360.0)
-          .withDuration(1000)
-          .withEasing(Easing.linear)
-          .onComplete(() => _startRotation())
-          .build();
+    if (!isRefreshing.value) return;
 
-      rotAnim.play();
-    }
+    currentAnimation = animate()
+        .to(refreshRotation, refreshRotation.value + 360.0)
+        .withDuration(1000)
+        .withEasing(Easing.linear)
+        .onComplete(() => _startRotation())
+        .build();
+    currentAnimation!.play();
+  }
+
+  @override
+  void dispose() {
+    currentAnimation?.stop();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Pull-to-Refresh',
-      description: 'Interactive pull gesture pattern',
-      onTrigger: _trigger,
+      description: 'Drag down to refresh',
       codeSnippet: '''final fsm = PullToRefreshStateMachine(
   config: PullToRefreshConfig.elastic,
   onRefresh: () async {
@@ -144,89 +156,93 @@ fsm.dispatch(PullToRefreshEvent.startPull);
 fsm.dispatch(PullToRefreshEvent.updatePull);
 fsm.dispatch(PullToRefreshEvent.release);''',
       child: ReactiveBuilder(
-        builder: (_) => Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Refresh indicator
-              SizedBox(
-                height: 60,
-                child: Opacity(
-                  opacity: refreshOpacity.value,
-                  child: Transform.scale(
-                    scale: refreshScale.value,
-                    child: Transform.rotate(
-                      angle: refreshRotation.value * (3.14159 / 180),
-                      child: Icon(
-                        isRefreshing ? Icons.refresh : Icons.arrow_downward,
-                        size: 40,
-                        color: Color.lerp(
-                          Colors.grey,
-                          Theme.of(context).colorScheme.primary,
-                          (pullOffset.value / threshold).clamp(0.0, 1.0),
+        builder: (_) => GestureDetector(
+          onVerticalDragUpdate: _onVerticalDragUpdate,
+          onVerticalDragEnd: _onVerticalDragEnd,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Refresh indicator
+                SizedBox(
+                  height: 60,
+                  child: Opacity(
+                    opacity: refreshOpacity.value,
+                    child: Transform.scale(
+                      scale: refreshScale.value,
+                      child: Transform.rotate(
+                        angle: refreshRotation.value * (3.14159 / 180),
+                        child: Icon(
+                          isRefreshing.value ? Icons.refresh : Icons.arrow_downward,
+                          size: 40,
+                          color: Color.lerp(
+                            Colors.grey,
+                            Theme.of(context).colorScheme.primary,
+                            (pullOffset.value / threshold).clamp(0.0, 1.0),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // Content area
-              Expanded(
-                child: Transform.translate(
-                  offset: Offset(0, pullOffset.value),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                // Content area
+                Expanded(
+                  child: Transform.translate(
+                    offset: Offset(0, pullOffset.value),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.list,
-                            size: 40,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Content',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Offset: ${pullOffset.value.toStringAsFixed(0)}px',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          if (pullOffset.value >= threshold)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                '✓ Threshold reached!',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.list,
+                              size: 40,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Drag Down',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Offset: ${pullOffset.value.toStringAsFixed(0)}px',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            if (pullOffset.value >= threshold)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  '✓ Release to refresh!',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                          if (refreshCount > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                'Refreshed: $refreshCount',
-                                style: Theme.of(context).textTheme.bodySmall,
+                            if (refreshCount.value > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Refreshed: ${refreshCount.value}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -243,91 +259,100 @@ class _DragShuffleListDemo extends StatefulWidget {
 }
 
 class _DragShuffleListDemoState extends State<_DragShuffleListDemo> {
-  final items = ['Item 1', 'Item 2', 'Item 3', 'Item 4'];
-  final positions = <int, AnimatableProperty<double>>{};
-  int? draggingIndex;
-  int swapCount = 0;
+  late final Signal<List<String>> items;
+  final positions = <String, AnimatableProperty<double>>{};
+  final scales = <String, AnimatableProperty<double>>{};
+  final rotations = <String, AnimatableProperty<double>>{};
+  late final Signal<String?> draggingItem;
+  late final Signal<int> swapCount;
+  final itemHeight = 50.0;
 
   @override
   void initState() {
     super.initState();
-    for (var i = 0; i < items.length; i++) {
-      positions[i] = animatableDouble(i * 50.0);
+    items = signal(['Item 1', 'Item 2', 'Item 3', 'Item 4']);
+    draggingItem = signal(null);
+    swapCount = signal(0);
+
+    // Initialize properties keyed by item name
+    for (var i = 0; i < items.value.length; i++) {
+      final item = items.value[i];
+      positions[item] = animatableDouble(i * itemHeight);
+      scales[item] = animatableDouble(1.0);
+      rotations[item] = animatableDouble(0.0);
     }
   }
 
-  void _trigger() {
-    // Reset
-    swapCount = 0;
-    setState(() {
-      final originalItems = ['Item 1', 'Item 2', 'Item 3', 'Item 4'];
-      items.clear();
-      items.addAll(originalItems);
-    });
+  void _onDragStart(int index) {
+    final item = items.value[index];
+    draggingItem.value = item;
 
-    // Simulate drag and shuffle sequence
-    _simulateShuffle();
+    // Animate scale and rotation on drag start
+    animate()
+        .to(scales[item]!, 1.05)
+        .to(rotations[item]!, 0.05)
+        .withDuration(150)
+        .withEasing(Easing.easeOutCubic)
+        .build()
+        .play();
   }
 
-  void _simulateShuffle() async {
-    // Shuffle: swap item 0 and item 2
-    await _animateSwap(0, 2);
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    // Shuffle: swap item 1 and item 3
-    await _animateSwap(1, 3);
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    // Shuffle: swap item 0 and item 1
-    await _animateSwap(0, 1);
+  void _onDragEnd() {
+    final item = draggingItem.value;
+    if (item != null) {
+      // Animate back to normal
+      animate()
+          .to(scales[item]!, 1.0)
+          .to(rotations[item]!, 0.0)
+          .withDuration(200)
+          .withEasing(Easing.easeOutCubic)
+          .build()
+          .play();
+    }
+    draggingItem.value = null;
   }
 
-  Future<void> _animateSwap(int index1, int index2) async {
-    setState(() {
-      draggingIndex = index1;
-      swapCount++;
-    });
+  void _onItemDropped(int draggedIndex, int targetIndex) {
+    if (draggedIndex == targetIndex) return;
 
-    // Get target positions
-    final pos1 = positions[index1]!.value;
-    final pos2 = positions[index2]!.value;
+    swapCount.value++;
 
-    // Animate positions
+    final draggedItem = items.value[draggedIndex];
+    final targetItem = items.value[targetIndex];
+
+    // Calculate target positions based on new indices
+    final draggedTargetPos = targetIndex * itemHeight;
+    final targetTargetPos = draggedIndex * itemHeight;
+
+    // Animate position swap
     final anim1 = animate()
-        .to(positions[index1]!, pos2)
-        .withDuration(400)
-        .withEasing(Easing.easeInOutCubic)
+        .to(positions[draggedItem]!, draggedTargetPos)
+        .withDuration(300)
+        .withEasing(Easing.easeOutCubic)
         .build();
 
     final anim2 = animate()
-        .to(positions[index2]!, pos1)
-        .withDuration(400)
-        .withEasing(Easing.easeInOutCubic)
+        .to(positions[targetItem]!, targetTargetPos)
+        .withDuration(300)
+        .withEasing(Easing.easeOutCubic)
         .build();
 
     anim1.play();
     anim2.play();
 
-    // Swap in items array
-    await Future.delayed(const Duration(milliseconds: 200));
-    setState(() {
-      final temp = items[index1];
-      items[index1] = items[index2];
-      items[index2] = temp;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 200));
-    setState(() {
-      draggingIndex = null;
-    });
+    // Swap items in the list
+    final newItems = List<String>.from(items.value);
+    final temp = newItems[draggedIndex];
+    newItems[draggedIndex] = newItems[targetIndex];
+    newItems[targetIndex] = temp;
+    items.value = newItems;
   }
 
   @override
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Drag-Shuffle List',
-      description: 'Reorderable items with drag',
-      onTrigger: _trigger,
+      description: 'Drag items to reorder',
       codeSnippet: '''final fsm = DragShuffleListStateMachine(
   items: items,
   positions: positions,
@@ -354,65 +379,128 @@ fsm.dispatch(DragShuffleEvent.drop);''',
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                   ),
                 ),
-                child: Stack(
-                  children: List.generate(items.length, (i) {
-                    final isDragging = draggingIndex == i;
-                    return Positioned(
-                      left: 16,
-                      right: 16,
-                      top: positions[i]!.value,
-                      child: Transform.scale(
-                        scale: isDragging ? 1.05 : 1.0,
-                        child: Transform.rotate(
-                          angle: isDragging ? 0.05 : 0.0,
-                          child: Opacity(
-                            opacity: isDragging ? 0.9 : 1.0,
-                            child: Container(
-                              height: 42,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: isDragging
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(2),
-                                border: Border.all(
-                                  color: isDragging
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                                  width: isDragging ? 2 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const SizedBox(width: 12),
-                                  Icon(
-                                    Icons.drag_indicator,
-                                    size: 20,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    items[i],
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      fontWeight: isDragging ? FontWeight.w600 : FontWeight.normal,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = constraints.maxWidth - 32; // Subtract left + right padding
+                    return Stack(
+                      children: List.generate(items.value.length, (i) {
+                        final item = items.value[i];
+                        final isDragging = draggingItem.value == item;
+                        return Positioned(
+                          left: 16,
+                          right: 16,
+                          top: positions[item]!.value,
+                          child: DragTarget<int>(
+                            onAcceptWithDetails: (details) => _onItemDropped(details.data, i),
+                            builder: (context, candidateData, rejectedData) {
+                              return Draggable<int>(
+                                data: i,
+                                onDragStarted: () => _onDragStart(i),
+                                onDragEnd: (_) => _onDragEnd(),
+                                feedback: Material(
+                                  color: Colors.transparent,
+                                  child: Transform.scale(
+                                    scale: 1.1,
+                                    child: Transform.rotate(
+                                      angle: 0.05,
+                                      child: Opacity(
+                                        opacity: 0.8,
+                                        child: Container(
+                                          width: itemWidth,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(2),
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const SizedBox(width: 12),
+                                          Icon(
+                                            Icons.drag_indicator,
+                                            size: 20,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            items.value[i],
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        ),
+                            childWhenDragging: Opacity(
+                              opacity: 0.3,
+                              child: _buildListItem(context, i, false),
+                            ),
+                            child: _buildListItem(context, i, isDragging),
+                          );
+                        },
                       ),
                     );
                   }),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 12),
-              if (swapCount > 0)
+              if (swapCount.value > 0)
                 Text(
-                  'Swaps: $swapCount',
+                  'Swaps: ${swapCount.value}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(BuildContext context, int i, bool isDragging) {
+    final item = items.value[i];
+    return Transform.scale(
+      scale: scales[item]!.value,
+      child: Transform.rotate(
+        angle: rotations[item]!.value,
+        child: Container(
+          height: 42,
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: isDragging
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+                : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(
+              color: isDragging
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              width: isDragging ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              Icon(
+                Icons.drag_indicator,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                items.value[i],
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: isDragging ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
             ],
           ),
         ),
@@ -581,8 +669,7 @@ class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Drag-Shuffle Grid',
-      description: 'Reorderable 2D grid items',
-      onTrigger: _trigger,
+      description: 'Reorderable 2D grid items (click to animate)',
       codeSnippet: '''final fsm = DragShuffleGridStateMachine(
   items: items,
   positions: positions,
@@ -597,8 +684,10 @@ class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
 // User drags grid item
 fsm.dispatch(DragShuffleEvent.startDrag);
 fsm.dispatch(DragShuffleEvent.drop);''',
-      child: ReactiveBuilder(
-        builder: (_) => Container(
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => ReactiveBuilder(
+        builder: (__) => Container(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -683,6 +772,7 @@ fsm.dispatch(DragShuffleEvent.drop);''',
                 ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -870,8 +960,7 @@ class _SwipeToDeleteDemoState extends State<_SwipeToDeleteDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Swipe to Delete',
-      description: 'Gesture-based item removal',
-      onTrigger: _trigger,
+      description: 'Gesture-based item removal (click to animate)',
       codeSnippet: '''
 void _onPanUpdate(details) {
   final deltaX = details.dx - dragStart.dx;
@@ -899,10 +988,13 @@ void _deleteItem(item) {
     .play();
 }
 ''',
-      child: ReactiveBuilder(
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => ReactiveBuilder(
         builder: (context) {
           return _buildList(context);
         },
+        ),
       ),
     );
   }
