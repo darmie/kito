@@ -84,6 +84,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   late final Signal<bool> isAnimating;
   late final Signal<bool> gameOver;
   int nextTileId = 0;
+  Timeline? matchTimeline;
 
   final random = math.Random();
 
@@ -312,26 +313,20 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
       hadAnyMatches = true;
       combo.value++;
 
-      // Animate matched tiles out in parallel
+      // Dispose previous timeline if exists
+      matchTimeline?.dispose();
+
+      // Build list of fade out animations for matched tiles
       final fadeOutAnims = <KitoAnimation>[];
       for (final pos in matches) {
         final tile = grid[pos.$1][pos.$2];
         if (tile != null) {
           tile.isMatched = true;
-          // Zoom out + fade
           fadeOutAnims.add(zoomOut(tile.scale, tile.opacity));
         }
       }
 
-      // Start fade out animations in parallel
-      if (fadeOutAnims.isNotEmpty) {
-        parallel(fadeOutAnims);
-      }
-
-      // Wait briefly for fade out to start, then begin gravity simultaneously
-      await Future.delayed(const Duration(milliseconds: 150));
-
-      // Remove matched tiles
+      // Remove matched tiles from grid
       for (final pos in matches) {
         grid[pos.$1][pos.$2] = null;
       }
@@ -339,17 +334,43 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
       // Update score
       score.value += matches.length * 10 * combo.value;
 
-      // Start gravity and spawning in parallel with overlapping timing
-      final gravityFuture = _applyGravity();
+      // Build gravity animations
+      final gravityAnims = _buildGravityAnimations();
 
-      // Wait a bit for gravity to start, then spawn new tiles
-      await Future.delayed(const Duration(milliseconds: 200));
-      final spawnFuture = _spawnNewTiles();
+      // Build spawn animations
+      final spawnAnims = _buildSpawnAnimations();
 
-      // Wait for both to complete
-      await Future.wait([gravityFuture, spawnFuture]);
+      // Create timeline: fade out matched tiles, then gravity + spawn concurrently
+      matchTimeline = Timeline();
 
-      // Small delay before checking for new matches
+      // Add all fade out animations concurrently at the start
+      if (fadeOutAnims.isNotEmpty) {
+        matchTimeline!.add(fadeOutAnims.first);
+        for (var i = 1; i < fadeOutAnims.length; i++) {
+          matchTimeline!.add(fadeOutAnims[i], position: TimelinePosition.concurrent);
+        }
+      }
+
+      // Add gravity animations concurrently (but after fade out completes)
+      if (gravityAnims.isNotEmpty) {
+        matchTimeline!.add(gravityAnims.first);
+        for (var i = 1; i < gravityAnims.length; i++) {
+          matchTimeline!.add(gravityAnims[i], position: TimelinePosition.concurrent);
+        }
+      }
+
+      // Add spawn animations concurrently with gravity
+      if (spawnAnims.isNotEmpty) {
+        for (var anim in spawnAnims) {
+          matchTimeline!.add(anim, position: TimelinePosition.concurrent);
+        }
+      }
+
+      // Play timeline and wait for completion
+      matchTimeline!.play();
+      await Future.delayed(Duration(milliseconds: matchTimeline!.duration));
+
+      // Brief pause before checking for new matches
       await Future.delayed(const Duration(milliseconds: 100));
     }
 
@@ -400,7 +421,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     return matches.toList();
   }
 
-  Future<void> _applyGravity() async {
+  List<KitoAnimation> _buildGravityAnimations() {
     final fallAnims = <KitoAnimation>[];
 
     for (var col = 0; col < cols; col++) {
@@ -414,7 +435,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
           final tile = grid[row][col]!;
           final newRow = row + emptyCount;
 
-          // Animate fall
+          // Create fall animation
           final targetPos = _getPosition(newRow, col);
           final fallAnim = animate()
               .to(tile.position, targetPos)
@@ -424,21 +445,17 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
 
           fallAnims.add(fallAnim);
 
+          // Update grid
           grid[newRow][col] = tile;
           grid[row][col] = null;
         }
       }
     }
 
-    // Animate all falling tiles in parallel
-    if (fallAnims.isNotEmpty) {
-      parallel(fallAnims);
-    }
-
-    await Future.delayed(const Duration(milliseconds: 350));
+    return fallAnims;
   }
 
-  Future<void> _spawnNewTiles() async {
+  List<KitoAnimation> _buildSpawnAnimations() {
     final spawnAnims = <KitoAnimation>[];
 
     for (var col = 0; col < cols; col++) {
@@ -449,7 +466,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
           // Start above the grid
           tile.position.value = Offset(col * (tileSize + gap), -tileSize);
 
-          // Animate fall
+          // Create fall animation
           final targetPos = _getPosition(row, col);
           final fallAnim = animate()
               .to(tile.position, targetPos)
@@ -457,23 +474,19 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
               .withEasing(Easing.easeInOutBounce)
               .build();
 
-          // Scale in
+          // Create scale in animation
           final scaleAnim = scaleIn(tile.scale, config: const ScaleConfig(duration: 250));
 
           spawnAnims.add(fallAnim);
           spawnAnims.add(scaleAnim);
 
+          // Update grid
           grid[row][col] = tile;
         }
       }
     }
 
-    // Animate all spawning tiles in parallel
-    if (spawnAnims.isNotEmpty) {
-      parallel(spawnAnims);
-    }
-
-    await Future.delayed(const Duration(milliseconds: 400));
+    return spawnAnims;
   }
 
   KitoAnimation zoomOut(
