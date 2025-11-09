@@ -222,6 +222,11 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
   late final CanvasAnimationProperties barChartProps;
   late final CanvasAnimationProperties gaugeProps;
 
+  // Animatable properties for metric counters
+  late final AnimatableProperty<double> animatedUsers;
+  late final AnimatableProperty<double> animatedRevenue;
+  late final AnimatableProperty<double> animatedPerformance;
+
   // Timeline for coordinated animations
   Timeline? timeline;
 
@@ -254,6 +259,30 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
       color: const Color(0xFFE74C3C),
       pathProgress: 0.0,
     );
+
+    // Initialize animatable properties for metric counters
+    animatedUsers = AnimatableProperty<double>(
+      0.0,
+      (start, end, progress) => start + (end - start) * progress,
+    );
+    animatedRevenue = AnimatableProperty<double>(
+      0.0,
+      (start, end, progress) => start + (end - start) * progress,
+    );
+    animatedPerformance = AnimatableProperty<double>(
+      0.0,
+      (start, end, progress) => start + (end - start) * progress,
+    );
+
+    // Add effect to trigger rebuilds when animated values change
+    effect(() {
+      // Access the signals to establish reactive dependencies
+      animatedUsers.signal.value;
+      animatedRevenue.signal.value;
+      animatedPerformance.signal.value;
+      // Trigger rebuild
+      if (mounted) setState(() {});
+    });
 
     // Create parallel FSM with three regions
     parallelFsm = _createParallelFSM();
@@ -349,6 +378,28 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
     lineChartProps.pathProgress.value = 0.0;
     barChartProps.scale.value = 0.0;
     gaugeProps.pathProgress.value = 0.0;
+    animatedUsers.value = 0.0;
+    animatedRevenue.value = 0.0;
+    animatedPerformance.value = 0.0;
+
+    // Counter animations - count up to target values
+    final usersAnim = animate()
+        .to(animatedUsers, totalUsers.value.toDouble())
+        .withDuration(1500)
+        .withEasing(Easing.easeOutExpo)
+        .build();
+
+    final revenueAnim = animate()
+        .to(animatedRevenue, totalRevenue.value)
+        .withDuration(1500)
+        .withEasing(Easing.easeOutExpo)
+        .build();
+
+    final performanceAnim = animate()
+        .to(animatedPerformance, performanceScore.value)
+        .withDuration(1500)
+        .withEasing(Easing.easeOutExpo)
+        .build();
 
     // Line chart animation (draws path)
     final lineAnim = animate()
@@ -376,8 +427,13 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
         .withEasing(Easing.easeInOutCubic)
         .build();
 
-    // Add to timeline with stagger
-    timeline!.add(lineAnim);
+    // Add counter animations first (concurrent)
+    timeline!.add(usersAnim);
+    timeline!.add(revenueAnim, position: TimelinePosition.concurrent);
+    timeline!.add(performanceAnim, position: TimelinePosition.concurrent);
+
+    // Add chart animations
+    timeline!.add(lineAnim, position: TimelinePosition.concurrent);
 
     // Add bar animations concurrently but internally staggered via delay
     if (barAnims.isNotEmpty) {
@@ -532,7 +588,7 @@ ReactiveBuilder(
                       Expanded(
                         child: _MetricCard(
                           title: 'Total Users',
-                          value: _formatNumber(totalUsers.value),
+                          value: _formatNumber(animatedUsers.value.toInt()),
                           icon: Icons.people,
                           color: const Color(0xFF3498DB),
                         ),
@@ -541,7 +597,7 @@ ReactiveBuilder(
                       Expanded(
                         child: _MetricCard(
                           title: 'Revenue',
-                          value: '\$${_formatNumber(totalRevenue.value.toInt())}',
+                          value: '\$${_formatNumber(animatedRevenue.value.toInt())}',
                           icon: Icons.attach_money,
                           color: const Color(0xFF2ECC71),
                         ),
@@ -550,7 +606,7 @@ ReactiveBuilder(
                       Expanded(
                         child: _MetricCard(
                           title: 'Performance',
-                          value: '${performanceScore.value.toStringAsFixed(1)}%',
+                          value: '${animatedPerformance.value.toStringAsFixed(1)}%',
                           icon: Icons.trending_up,
                           color: const Color(0xFFE74C3C),
                         ),
