@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
+import 'package:kito_reactive/kito_reactive.dart';
 import '../engine/animatable.dart';
 
 /// Properties for canvas/custom paint animations
@@ -86,18 +87,44 @@ abstract class KitoPainter extends CustomPainter {
 /// A listenable that notifies when any property changes
 class _PropertiesListenable extends ChangeNotifier {
   final CanvasAnimationProperties _properties;
+  final List<void Function()> _disposeCallbacks = [];
 
   _PropertiesListenable(this._properties) {
     _setupListeners();
   }
 
   void _setupListeners() {
-    // Set up listeners for all signals
-    // In production, this would use effects properly
+    // Set up effect-based listeners for all animatable properties
+    // Each property change triggers a repaint
+    final effectDispose = effect(() {
+      // Access all signals to create dependencies
+      _properties.position.signal.value;
+      _properties.size.signal.value;
+      _properties.color.signal.value;
+      _properties.strokeWidth.signal.value;
+      _properties.rotation.signal.value;
+      _properties.scale.signal.value;
+      _properties.pathProgress.signal.value;
+
+      // Notify listeners whenever any property changes
+      _notifyChange();
+    });
+
+    _disposeCallbacks.add(effectDispose);
   }
 
   void _notifyChange() {
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    // Clean up all listeners
+    for (final callback in _disposeCallbacks) {
+      callback();
+    }
+    _disposeCallbacks.clear();
+    super.dispose();
   }
 }
 
