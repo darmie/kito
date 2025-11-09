@@ -73,6 +73,7 @@ class ModalAnimationConfig {
   /// Fade animation
   static const ModalAnimationConfig fade = ModalAnimationConfig(
     type: ModalAnimationType.fade,
+    initialScale: 1.0,  // No scaling for fade
   );
 
   /// Scale from center
@@ -85,6 +86,14 @@ class ModalAnimationConfig {
   static const ModalAnimationConfig slideUp = ModalAnimationConfig(
     type: ModalAnimationType.slideUp,
     showEasing: Easing.easeOutCubic,
+    initialScale: 1.0,  // No scaling for slide
+  );
+
+  /// Slide down (top sheet style)
+  static const ModalAnimationConfig slideDown = ModalAnimationConfig(
+    type: ModalAnimationType.slideDown,
+    showEasing: Easing.easeOutCubic,
+    initialScale: 1.0,  // No scaling for slide
   );
 
   /// Bounce in
@@ -110,6 +119,9 @@ class ModalContext {
   KitoAnimation? currentAnimation;
   VoidCallback? onShow;
   VoidCallback? onHide;
+
+  // Reference to FSM for sending complete events
+  ModalStateMachine? fsm;
 
   ModalContext({
     required this.config,
@@ -144,7 +156,10 @@ class ModalStateMachine
             states: _buildStates(),
           ),
           context: context,
-        );
+        ) {
+    // Store reference to FSM in context
+    context.fsm = this;
+  }
 
   static Map<ModalState, StateConfig<ModalState, ModalEvent, ModalContext>>
       _buildStates() {
@@ -247,6 +262,9 @@ class ModalStateMachine
         .to(ctx.backdropOpacity, 0.0)
         .withDuration(ctx.config.hideDuration)
         .withEasing(ctx.config.hideEasing)
+        .onComplete(() {
+          ctx.fsm?.send(ModalEvent.complete);
+        })
         .build();
 
     ctx.currentAnimation!.play();
@@ -255,9 +273,13 @@ class ModalStateMachine
   static void _animateFadeIn(ModalContext ctx) {
     ctx.currentAnimation = animate()
         .to(ctx.opacity, 1.0)
+        .to(ctx.scale, 1.0)  // Animate scale to 1.0 for pure fade
         .to(ctx.backdropOpacity, ctx.config.backdropOpacity)
         .withDuration(ctx.config.showDuration)
         .withEasing(ctx.config.showEasing)
+        .onComplete(() {
+          ctx.fsm?.send(ModalEvent.complete);
+        })
         .build();
 
     ctx.currentAnimation!.play();
@@ -270,6 +292,9 @@ class ModalStateMachine
         .to(ctx.backdropOpacity, ctx.config.backdropOpacity)
         .withDuration(ctx.config.showDuration)
         .withEasing(ctx.config.showEasing)
+        .onComplete(() {
+          ctx.fsm?.send(ModalEvent.complete);
+        })
         .build();
 
     ctx.currentAnimation!.play();
@@ -278,10 +303,14 @@ class ModalStateMachine
   static void _animateSlideIn(ModalContext ctx) {
     ctx.currentAnimation = animate()
         .to(ctx.opacity, 1.0)
+        .to(ctx.scale, 1.0)  // Animate scale to 1.0 for pure slide
         .to(ctx.offsetY, 0.0)
         .to(ctx.backdropOpacity, ctx.config.backdropOpacity)
         .withDuration(ctx.config.showDuration)
         .withEasing(ctx.config.showEasing)
+        .onComplete(() {
+          ctx.fsm?.send(ModalEvent.complete);
+        })
         .build();
 
     ctx.currentAnimation!.play();
@@ -294,6 +323,9 @@ class ModalStateMachine
         .to(ctx.backdropOpacity, ctx.config.backdropOpacity)
         .withDuration(ctx.config.showDuration)
         .withEasing(Easing.easeOutBounce)
+        .onComplete(() {
+          ctx.fsm?.send(ModalEvent.complete);
+        })
         .build();
 
     ctx.currentAnimation!.play();
@@ -309,6 +341,9 @@ class ModalStateMachine
         ])
         .to(ctx.backdropOpacity, ctx.config.backdropOpacity)
         .withDuration(ctx.config.showDuration)
+        .onComplete(() {
+          ctx.fsm?.send(ModalEvent.complete);
+        })
         .build();
 
     ctx.currentAnimation!.play();

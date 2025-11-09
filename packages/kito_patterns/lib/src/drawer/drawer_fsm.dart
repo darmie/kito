@@ -87,6 +87,9 @@ class DrawerContext {
   VoidCallback? onOpen;
   VoidCallback? onClose;
 
+  // Reference to FSM for sending complete events
+  DrawerStateMachine? fsm;
+
   DrawerContext({
     required this.config,
     this.onOpen,
@@ -106,7 +109,10 @@ class DrawerStateMachine
             states: _buildStates(),
           ),
           context: context,
-        );
+        ) {
+    // Store reference to FSM in context
+    context.fsm = this;
+  }
 
   static Map<DrawerState, StateConfig<DrawerState, DrawerEvent, DrawerContext>>
       _buildStates() {
@@ -198,6 +204,9 @@ class DrawerStateMachine
         .to(ctx.contentScale, 0.95) // Slightly scale content
         .withDuration(ctx.config.openDuration)
         .withEasing(ctx.config.openEasing)
+        .onComplete(() {
+          ctx.fsm?.send(DrawerEvent.complete);
+        })
         .build();
     ctx.currentAnimation!.play();
   }
@@ -210,6 +219,9 @@ class DrawerStateMachine
         .to(ctx.contentScale, 1.0)
         .withDuration(ctx.config.closeDuration)
         .withEasing(ctx.config.closeEasing)
+        .onComplete(() {
+          ctx.fsm?.send(DrawerEvent.complete);
+        })
         .build();
     ctx.currentAnimation!.play();
   }

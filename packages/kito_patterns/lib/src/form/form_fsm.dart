@@ -137,6 +137,20 @@ class FormStateMachine extends KitoStateMachine<FormState, FormEvent, FormContex
               return ctx;
             },
           ),
+          FormEvent.validate: TransitionConfig(
+            target: FormState.validating,
+            action: (ctx) {
+              _animateNormal(ctx);
+              return ctx;
+            },
+          ),
+          FormEvent.reset: TransitionConfig(
+            target: FormState.editing,
+            action: (ctx) {
+              _animateReset(ctx);
+              return ctx;
+            },
+          ),
         },
       ),
 

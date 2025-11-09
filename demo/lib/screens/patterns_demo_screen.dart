@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Easing, FormState;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
 import '../widgets/demo_card.dart';
+import '../widgets/clickable_demo.dart';
 
 class PatternsDemoScreen extends StatelessWidget {
   const PatternsDemoScreen({super.key});
@@ -10,7 +11,7 @@ class PatternsDemoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('UI Patterns'),
+        title: const Text('UI FSM Patterns'),
       ),
       body: GridView.count(
         padding: const EdgeInsets.all(24),
@@ -55,26 +56,6 @@ class _ButtonPatternDemoState extends State<_ButtonPatternDemo> {
     buttonFsm = ButtonStateMachine(buttonContext);
   }
 
-  void _trigger() {
-    // Reset
-    clickCount = 0;
-    buttonFsm.send(ButtonEvent.enable);
-
-    // Simulate button interactions
-    Future.delayed(const Duration(milliseconds: 100), () {
-      buttonFsm.send(ButtonEvent.pressDown);
-    });
-    Future.delayed(const Duration(milliseconds: 300), () {
-      buttonFsm.send(ButtonEvent.pressUp);
-    });
-    Future.delayed(const Duration(milliseconds: 800), () {
-      buttonFsm.send(ButtonEvent.startLoading);
-    });
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      buttonFsm.send(ButtonEvent.stopLoading);
-    });
-  }
-
   @override
   void dispose() {
     buttonContext.currentAnimation?.dispose();
@@ -86,7 +67,6 @@ class _ButtonPatternDemoState extends State<_ButtonPatternDemo> {
     return DemoCard(
       title: 'Button States',
       description: 'FSM with hover, press, loading',
-      onTrigger: _trigger,
       codeSnippet: '''final ctx = ButtonContext(
   config: ButtonAnimationConfig.bouncy,
 );
@@ -121,23 +101,24 @@ fsm.dispatch(ButtonEvent.startLoading);''',
                           color: const Color(0xFF8B4513),
                           borderRadius: BorderRadius.circular(2),
                         ),
-                        child: buttonFsm.currentState == ButtonState.loading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation(Colors.white),
-                                ),
-                              )
-                            : const Text(
-                                'Click Me',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                        child:
+                            buttonFsm.currentState.value == ButtonState.loading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Click Me',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                       ),
                     ),
                   ),
@@ -223,6 +204,11 @@ class _FormPatternDemoState extends State<_FormPatternDemo> {
     Future.delayed(const Duration(milliseconds: 2200), () {
       formFsm.send(FormEvent.submit);
     });
+
+    // Auto-reset after showing success state
+    Future.delayed(const Duration(milliseconds: 4000), () {
+      formFsm.send(FormEvent.reset);
+    });
   }
 
   @override
@@ -236,8 +222,7 @@ class _FormPatternDemoState extends State<_FormPatternDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Form Validation',
-      description: 'FSM with validation feedback',
-      onTrigger: _trigger,
+      description: 'FSM with validation feedback (click to animate)',
       codeSnippet: '''final ctx = FormContext(
   config: FormAnimationConfig(),
 );
@@ -247,81 +232,85 @@ final fsm = FormStateMachine(ctx);
 fsm.dispatch(FormEvent.validate);
 fsm.dispatch(FormEvent.validationFailed);
 fsm.dispatch(FormEvent.submit);''',
-      child: Center(
-        child: Container(
-          width: 250,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ReactiveBuilder(
-                builder: (_) => Transform.translate(
-                  offset: Offset(formContext.offsetX.value, 0),
-                  child: Opacity(
-                    opacity: formContext.opacity.value,
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'Enter text...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(2),
-                          borderSide: BorderSide(
-                            color: Color.lerp(
-                              Colors.grey,
-                              Colors.red,
-                              formContext.borderColor.value,
-                            )!,
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: Container(
+            width: 250,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ReactiveBuilder(
+                  builder: (_) => Transform.translate(
+                    offset: Offset(formContext.offsetX.value, 0),
+                    child: Opacity(
+                      opacity: formContext.opacity.value,
+                      child: TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          hintText: 'Enter text...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(2),
+                            borderSide: BorderSide(
+                              color: Color.lerp(
+                                Colors.grey,
+                                Colors.red,
+                                formContext.borderColor.value,
+                              )!,
+                            ),
                           ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(2),
-                          borderSide: BorderSide(
-                            color: Color.lerp(
-                              Colors.grey,
-                              Colors.red,
-                              formContext.borderColor.value,
-                            )!,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(2),
+                            borderSide: BorderSide(
+                              color: Color.lerp(
+                                Colors.grey,
+                                Colors.red,
+                                formContext.borderColor.value,
+                              )!,
+                            ),
                           ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(2),
-                          borderSide: BorderSide(
-                            color: Color.lerp(
-                              Theme.of(context).colorScheme.primary,
-                              Colors.red,
-                              formContext.borderColor.value,
-                            )!,
-                            width: 2,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(2),
+                            borderSide: BorderSide(
+                              color: Color.lerp(
+                                Theme.of(context).colorScheme.primary,
+                                Colors.red,
+                                formContext.borderColor.value,
+                              )!,
+                              width: 2,
+                            ),
                           ),
+                          suffixIcon:
+                              formFsm.currentState.value == FormState.success
+                                  ? Transform.scale(
+                                      scale: formContext.successScale.value,
+                                      child: const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                      ),
+                                    )
+                                  : null,
                         ),
-                        suffixIcon: formFsm.currentState == FormState.success
-                            ? Transform.scale(
-                                scale: formContext.successScale.value,
-                                child: const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                ),
-                              )
-                            : null,
+                        style: const TextStyle(fontSize: 14),
+                        onChanged: (_) {
+                          if (formFsm.currentState.value == FormState.invalid) {
+                            formFsm.send(FormEvent.input);
+                          }
+                        },
                       ),
-                      style: const TextStyle(fontSize: 14),
-                      onChanged: (_) {
-                        if (formFsm.currentState == FormState.invalid) {
-                          formFsm.send(FormEvent.input);
-                        }
-                      },
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              ReactiveBuilder(
-                builder: (_) => Text(
-                  'State: ${formFsm.currentState.value.name}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(height: 12),
+                ReactiveBuilder(
+                  builder: (_) => Text(
+                    'State: ${formFsm.currentState.value.name}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -350,13 +339,6 @@ class _DrawerPatternDemoState extends State<_DrawerPatternDemo> {
     drawerFsm = DrawerStateMachine(drawerContext);
   }
 
-  void _trigger() {
-    drawerFsm.send(DrawerEvent.toggle);
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      drawerFsm.send(DrawerEvent.toggle);
-    });
-  }
-
   @override
   void dispose() {
     drawerContext.currentAnimation?.dispose();
@@ -368,7 +350,6 @@ class _DrawerPatternDemoState extends State<_DrawerPatternDemo> {
     return DemoCard(
       title: 'Drawer Slide',
       description: 'FSM with slide transition',
-      onTrigger: _trigger,
       codeSnippet: '''final ctx = DrawerContext(
   config: DrawerAnimationConfig.bouncy,
 );
@@ -381,27 +362,33 @@ fsm.dispatch(DrawerEvent.toggle);''',
           builder: (_) => SizedBox(
             width: 300,
             height: 200,
-            child: Stack(
-              children: [
-                // Main content
-                Transform.scale(
-                  scale: drawerContext.contentScale.value,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.background,
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.2),
+            child: ClipRect(
+              // Prevent overflow
+              child: Stack(
+                children: [
+                  // Main content
+                  Transform.scale(
+                    scale: drawerContext.contentScale.value,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.background,
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.2),
+                        ),
                       ),
-                    ),
-                    child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.web, size: 40),
+                          // Menu button
+                          IconButton(
+                            icon: const Icon(Icons.menu, size: 32),
+                            onPressed: () => drawerFsm.send(DrawerEvent.toggle),
+                            tooltip: 'Open drawer',
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Main Content',
@@ -416,52 +403,59 @@ fsm.dispatch(DrawerEvent.toggle);''',
                       ),
                     ),
                   ),
-                ),
-                // Overlay
-                if (drawerContext.overlayOpacity.value > 0)
-                  Opacity(
-                    opacity: drawerContext.overlayOpacity.value,
-                    child: Container(
-                      color: Colors.black,
-                    ),
-                  ),
-                // Drawer
-                Positioned(
-                  left: -225 + (225 * drawerContext.position.value),
-                  top: 0,
-                  bottom: 0,
-                  width: 225,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.2),
+                  // Overlay - click to close
+                  if (drawerContext.overlayOpacity.value > 0)
+                    GestureDetector(
+                      onTap: () => drawerFsm.send(DrawerEvent.close),
+                      child: Opacity(
+                        opacity: drawerContext.overlayOpacity.value,
+                        child: Container(
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.menu, size: 24),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Drawer Menu',
-                          style: Theme.of(context).textTheme.titleSmall,
+                  // Drawer
+                  Positioned(
+                    left: -225 + (225 * drawerContext.position.value),
+                    top: 0,
+                    bottom: 0,
+                    width: 225,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.2),
                         ),
-                        const SizedBox(height: 8),
-                        const Divider(),
-                        const SizedBox(height: 8),
-                        _drawerItem(context, Icons.home, 'Home'),
-                        _drawerItem(context, Icons.settings, 'Settings'),
-                        _drawerItem(context, Icons.info, 'About'),
-                      ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: SingleChildScrollView(
+                        // Prevent overflow
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.menu, size: 24),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Drawer Menu',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            const Divider(),
+                            const SizedBox(height: 8),
+                            _drawerItem(context, Icons.home, 'Home'),
+                            _drawerItem(context, Icons.settings, 'Settings'),
+                            _drawerItem(context, Icons.info, 'About'),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -495,21 +489,59 @@ class _ModalPatternDemo extends StatefulWidget {
 }
 
 class _ModalPatternDemoState extends State<_ModalPatternDemo> {
-  late final ModalContext modalContext;
-  late final ModalStateMachine modalFsm;
-  ModalAnimationType currentType = ModalAnimationType.scale;
+  late final Signal<ModalAnimationType> currentType;
+  late final Signal<ModalContext> modalContext;
+  late final Signal<ModalStateMachine> modalFsm;
 
   @override
   void initState() {
     super.initState();
-    _createModal(currentType);
+    currentType = signal(ModalAnimationType.scale);
+
+    final ctx = ModalContext(config: _getConfigForType(currentType.value));
+    final fsm = ModalStateMachine(ctx);
+    modalContext = signal(ctx);
+    modalFsm = signal(fsm);
+
+    // Show the initial modal after a brief delay
+    Future.microtask(() => modalFsm.value.send(ModalEvent.show));
+  }
+
+  void _handleTypeChange(ModalAnimationType newType) {
+    // Skip if same type
+    if (currentType.value == newType) return;
+
+    // Always hide current modal first
+    modalFsm.value.send(ModalEvent.hide);
+
+    // Wait for hide animation to complete, then recreate and show
+    Future.delayed(
+        Duration(milliseconds: modalContext.value.config.hideDuration + 100),
+        () {
+      if (mounted) {
+        // Dispose old animation
+        modalContext.value.currentAnimation?.dispose();
+
+        // Update type using signal
+        currentType.value = newType;
+
+        // Create new modal context and FSM using signals
+        final ctx = ModalContext(config: _getConfigForType(newType));
+        final fsm = ModalStateMachine(ctx);
+        modalContext.value = ctx;
+        modalFsm.value = fsm;
+
+        // Show new modal with new animation type
+        Future.microtask(() => modalFsm.value.send(ModalEvent.show));
+      }
+    });
   }
 
   void _createModal(ModalAnimationType type) {
-    modalContext = ModalContext(
-      config: _getConfigForType(type),
-    );
-    modalFsm = ModalStateMachine(modalContext);
+    final ctx = ModalContext(config: _getConfigForType(type));
+    final fsm = ModalStateMachine(ctx);
+    modalContext.value = ctx;
+    modalFsm.value = fsm;
   }
 
   ModalAnimationConfig _getConfigForType(ModalAnimationType type) {
@@ -520,6 +552,8 @@ class _ModalPatternDemoState extends State<_ModalPatternDemo> {
         return ModalAnimationConfig.scale;
       case ModalAnimationType.slideUp:
         return ModalAnimationConfig.slideUp;
+      case ModalAnimationType.slideDown:
+        return ModalAnimationConfig.slideDown;
       case ModalAnimationType.bounce:
         return ModalAnimationConfig.bounce;
       default:
@@ -527,16 +561,9 @@ class _ModalPatternDemoState extends State<_ModalPatternDemo> {
     }
   }
 
-  void _trigger() {
-    modalFsm.send(ModalEvent.show);
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      modalFsm.send(ModalEvent.hide);
-    });
-  }
-
   @override
   void dispose() {
-    modalContext.currentAnimation?.dispose();
+    modalContext.value.currentAnimation?.dispose();
     super.dispose();
   }
 
@@ -545,7 +572,6 @@ class _ModalPatternDemoState extends State<_ModalPatternDemo> {
     return DemoCard(
       title: 'Modal Dialog',
       description: 'FSM with multiple animations',
-      onTrigger: _trigger,
       codeSnippet: '''final ctx = ModalContext(
   config: ModalAnimationConfig.scale,
 );
@@ -559,15 +585,20 @@ fsm.dispatch(ModalEvent.hide);''',
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ReactiveBuilder(
+              key: ValueKey(currentType.value),
               builder: (_) => SizedBox(
                 width: 300,
                 height: 150,
                 child: Stack(
                   children: [
-                    // Backdrop
-                    if (modalContext.backdropOpacity.value > 0)
-                      Opacity(
-                        opacity: modalContext.backdropOpacity.value,
+                    // Backdrop - always present, opacity animated by FSM
+                    GestureDetector(
+                      onTap: modalContext.value.backdropOpacity.value > 0.1
+                          ? () => modalFsm.value.send(ModalEvent.hide)
+                          : null,
+                      child: Opacity(
+                        opacity: modalContext.value.backdropOpacity.value
+                            .clamp(0.0, 1.0),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.black,
@@ -575,80 +606,78 @@ fsm.dispatch(ModalEvent.hide);''',
                           ),
                         ),
                       ),
-                    // Modal
-                    if (modalContext.opacity.value > 0)
-                      Center(
-                        child: Opacity(
-                          opacity: modalContext.opacity.value,
-                          child: Transform.scale(
-                            scale: modalContext.scale.value,
-                            child: Transform.translate(
-                              offset: Offset(
-                                modalContext.offsetX.value,
-                                modalContext.offsetY.value,
+                    ),
+                    // Modal - always present, opacity/scale animated by FSM
+                    Center(
+                      child: Opacity(
+                        opacity:
+                            modalContext.value.opacity.value.clamp(0.0, 1.0),
+                        child: Transform.scale(
+                          scale: modalContext.value.scale.value,
+                          child: Transform.translate(
+                            offset: Offset(
+                              modalContext.value.offsetX.value,
+                              modalContext.value.offsetY.value,
+                            ),
+                            child: Container(
+                              width: 200,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 2,
+                                ),
                               ),
-                              child: Container(
-                                width: 200,
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(2),
-                                  border: Border.all(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    width: 2,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.info_outline, size: 32),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Modal Dialog',
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
                                   ),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.info_outline, size: 32),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'Modal Dialog',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      currentType.name,
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    currentType.value.name,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: ModalAnimationType.values.take(4).map((type) {
-                return ChoiceChip(
-                  label: Text(
-                    type.name,
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                  selected: currentType == type,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        currentType = type;
-                        _createModal(type);
-                      });
-                    }
-                  },
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                );
-              }).toList(),
+            ReactiveBuilder(
+              builder: (_) => Wrap(
+                spacing: 8,
+                children: ModalAnimationType.values.take(4).map((type) {
+                  return ChoiceChip(
+                    label: Text(
+                      type.name,
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                    selected: currentType.value == type,
+                    onSelected: (selected) {
+                      if (selected) {
+                        _handleTypeChange(type);
+                      }
+                    },
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  );
+                }).toList(),
+              ),
             ),
           ],
         ),
@@ -697,10 +726,6 @@ class _ToastPatternDemoState extends State<_ToastPatternDemo> {
     ('Warning', Icons.warning, Color(0xFFF39C12)),
     ('Error', Icons.error, Color(0xFFE74C3C)),
   ];
-
-  void _trigger() {
-    _showRandomToast();
-  }
 
   void _showRandomToast() {
     final typeIndex = toastCount % toastTypes.length;
@@ -767,7 +792,6 @@ class _ToastPatternDemoState extends State<_ToastPatternDemo> {
     return DemoCard(
       title: 'Toast Notifications',
       description: 'Animated notification pattern',
-      onTrigger: _trigger,
       codeSnippet: '''
 // Show toast with slide + fade
 final showAnim = animate()
@@ -791,11 +815,7 @@ Future.delayed(Duration(seconds: 2), () {
   dismissAnim.play();
 });
 ''',
-      child: ReactiveBuilder(
-        builder: (context) {
-          return _buildToastContainer(context);
-        },
-      ),
+      child: _buildToastContainer(context),
     );
   }
 
@@ -807,12 +827,12 @@ Future.delayed(Duration(seconds: 2), () {
           Expanded(
             child: Stack(
               children: [
-                // Empty state
-                if (toasts.isEmpty)
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                // Show toast button
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (toasts.isEmpty) ...[
                         Icon(
                           Icons.notifications_none,
                           size: 48,
@@ -822,25 +842,23 @@ Future.delayed(Duration(seconds: 2), () {
                               .withOpacity(0.3),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          'No notifications',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.5),
-                                  ),
-                        ),
                       ],
-                    ),
+                      ElevatedButton.icon(
+                        onPressed: _showRandomToast,
+                        icon: const Icon(Icons.add_alert, size: 16),
+                        label: const Text('Show Toast'),
+                      ),
+                    ],
                   ),
+                ),
 
-                // Toast notifications stack
+                // Toast notifications stack - wrapped in ReactiveBuilder
                 ...toasts.asMap().entries.map((entry) {
                   final index = entry.key;
                   final toast = entry.value;
-                  return _buildToast(context, toast, index);
+                  return ReactiveBuilder(
+                    builder: (_) => _buildToast(context, toast, index),
+                  );
                 }),
               ],
             ),
