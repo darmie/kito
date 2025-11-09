@@ -367,11 +367,16 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
       }
 
       // Play timeline and wait for completion
-      matchTimeline!.play();
-      await Future.delayed(Duration(milliseconds: matchTimeline!.duration));
+      try {
+        matchTimeline!.play();
+        await Future.delayed(Duration(milliseconds: matchTimeline!.duration));
 
-      // Brief pause before checking for new matches
-      await Future.delayed(const Duration(milliseconds: 100));
+        // Brief pause before checking for new matches
+        await Future.delayed(const Duration(milliseconds: 100));
+      } catch (e) {
+        // If timeline fails, ensure we don't get stuck
+        // Silently catch error to prevent animation lock
+      }
     }
 
     return hadAnyMatches;
