@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 import '../widgets/demo_card.dart';
+import '../widgets/heatmap_demo_widget.dart';
 
 class DashboardDemoScreen extends StatelessWidget {
   const DashboardDemoScreen({super.key});
@@ -22,6 +23,8 @@ class DashboardDemoScreen extends StatelessWidget {
               height: 800,
               child: _AdvancedDashboardDemo(),
             ),
+            SizedBox(height: 24),
+            HeatMapDemo(),
           ],
         ),
       ),
