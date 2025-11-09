@@ -78,6 +78,9 @@ export 'src/pull_to_refresh/pull_to_refresh_fsm.dart';
 export 'src/drag_shuffle/drag_shuffle_fsm.dart';
 export 'src/drag_shuffle/drag_shuffle_grid.dart';
 
+// Swipe to Delete
+export 'src/swipe_to_delete/swipe_to_delete_fsm.dart';
+
 // Animation Helpers
 export 'src/helpers/stagger.dart';
 
