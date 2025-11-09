@@ -7,51 +7,53 @@ import 'package:kito_fsm/kito_fsm.dart';
 import 'demo_card.dart';
 import 'clickable_demo.dart';
 
-/// System monitoring heat map showing CPU-style utilization over time
-/// Data point representing a metric at a specific time
-class MetricData {
-  final double timestamp;
-  final List<double> values; // Multiple metrics (CPU cores, memory, etc.)
+/// Real-time scrolling area chart with gradient fills
+/// Similar to climate/monitoring dashboards
 
-  const MetricData({
+/// Data point for time series
+class DataPoint {
+  final double timestamp;
+  final double value;
+
+  const DataPoint({
     required this.timestamp,
-    required this.values,
+    required this.value,
   });
 }
 
-/// Heat map state machine states
-enum HeatMapState { idle, updating, animating }
+/// Chart state machine
+enum ChartState { idle, updating, animating }
 
-enum HeatMapEvent { startUpdate, updateComplete }
+enum ChartEvent { startUpdate, updateComplete }
 
-class HeatMapContext {
+class ChartContext {
   final void Function() onUpdate;
 
-  HeatMapContext({required this.onUpdate});
+  ChartContext({required this.onUpdate});
 }
 
-/// Heat map FSM
-class HeatMapFSM extends KitoStateMachine<HeatMapState, HeatMapEvent, HeatMapContext> {
-  HeatMapFSM(HeatMapContext context)
+/// Chart FSM
+class ChartFSM extends KitoStateMachine<ChartState, ChartEvent, ChartContext> {
+  ChartFSM(ChartContext context)
       : super(
-          initial: HeatMapState.idle,
+          initial: ChartState.idle,
           context: context,
           config: StateMachineConfig(
             states: {
-              HeatMapState.idle: StateConfig(
-                state: HeatMapState.idle,
+              ChartState.idle: StateConfig(
+                state: ChartState.idle,
                 transitions: {
-                  HeatMapEvent.startUpdate: TransitionConfig(
-                    target: HeatMapState.updating,
+                  ChartEvent.startUpdate: TransitionConfig(
+                    target: ChartState.updating,
                   ),
                 },
               ),
-              HeatMapState.updating: StateConfig(
-                state: HeatMapState.updating,
+              ChartState.updating: StateConfig(
+                state: ChartState.updating,
                 onEntry: (context, from, to) => context.onUpdate(),
                 transitions: {
-                  HeatMapEvent.updateComplete: TransitionConfig(
-                    target: HeatMapState.idle,
+                  ChartEvent.updateComplete: TransitionConfig(
+                    target: ChartState.idle,
                   ),
                 },
               ),
@@ -60,144 +62,161 @@ class HeatMapFSM extends KitoStateMachine<HeatMapState, HeatMapEvent, HeatMapCon
         );
 }
 
-/// CPU/System monitoring style heat map painter
-class SystemHeatMapPainter extends KitoPainter {
-  final List<MetricData> dataPoints;
-  final int numMetrics;
+/// Scrolling area chart painter with gradient fills
+class ScrollingAreaChartPainter extends KitoPainter {
+  final List<DataPoint> dataPoints;
+  final double minValue;
   final double maxValue;
-  final List<String> metricLabels;
+  final Color lineColor;
+  final Color gradientStartColor;
+  final Color gradientEndColor;
+  final double scrollOffset;
 
-  SystemHeatMapPainter(
+  ScrollingAreaChartPainter(
     super.properties, {
     required this.dataPoints,
-    required this.numMetrics,
+    required this.minValue,
     required this.maxValue,
-    required this.metricLabels,
+    required this.lineColor,
+    required this.gradientStartColor,
+    required this.gradientEndColor,
+    this.scrollOffset = 0.0,
   });
-
-  Color _getHeatColor(double value) {
-    final normalized = maxValue > 0 ? (value / maxValue).clamp(0.0, 1.0) : 0.0;
-
-    // Color gradient: green (low) -> yellow (medium) -> red (high)
-    if (normalized < 0.5) {
-      return Color.lerp(
-        const Color(0xFF2ECC71), // Green
-        const Color(0xFFF39C12), // Yellow
-        normalized * 2,
-      )!;
-    } else {
-      return Color.lerp(
-        const Color(0xFFF39C12), // Yellow
-        const Color(0xFFE74C3C), // Red
-        (normalized - 0.5) * 2,
-      )!;
-    }
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (dataPoints.isEmpty || numMetrics == 0) return;
+    if (dataPoints.isEmpty || maxValue <= minValue) return;
 
-    final metricHeight = size.height / numMetrics;
-    final timeStep = size.width / (dataPoints.length - 1).clamp(1, double.infinity);
+    final valueRange = maxValue - minValue;
+    final padding = 20.0;
+    final chartHeight = size.height - padding * 2;
+    final chartWidth = size.width;
 
-    // Draw heat map with gradient rectangles
-    for (int metricIndex = 0; metricIndex < numMetrics; metricIndex++) {
-      final y = metricIndex * metricHeight;
+    // Calculate x step based on data points
+    final xStep = chartWidth / (dataPoints.length - 1).clamp(1, double.infinity);
 
-      for (int i = 0; i < dataPoints.length - 1; i++) {
-        final data = dataPoints[i];
-        final nextData = dataPoints[i + 1];
+    // Build path for area fill
+    final path = ui.Path();
+    final linePath = ui.Path();
 
-        if (metricIndex >= data.values.length) continue;
+    bool firstPoint = true;
+    for (int i = 0; i < dataPoints.length; i++) {
+      final point = dataPoints[i];
+      final normalizedValue = ((point.value - minValue) / valueRange).clamp(0.0, 1.0);
 
-        final value = data.values[metricIndex];
-        final nextValue = metricIndex < nextData.values.length
-            ? nextData.values[metricIndex]
-            : value;
+      // Apply scroll offset and progress animation
+      final x = (i * xStep) - scrollOffset + (chartWidth * (1 - properties.pathProgress.value));
+      final y = padding + chartHeight - (normalizedValue * chartHeight);
 
-        final x = i * timeStep;
-        final width = timeStep + 1; // Add 1 to prevent gaps
+      // Skip points outside visible area
+      if (x < -xStep || x > chartWidth + xStep) continue;
 
-        // Create gradient rect
-        final rect = Rect.fromLTWH(x, y, width, metricHeight);
+      if (firstPoint) {
+        path.moveTo(x, size.height - padding);
+        path.lineTo(x, y);
+        linePath.moveTo(x, y);
+        firstPoint = false;
+      } else {
+        // Smooth curve using quadratic bezier
+        if (i > 0 && i < dataPoints.length) {
+          final prevPoint = dataPoints[i - 1];
+          final prevNormalized = ((prevPoint.value - minValue) / valueRange).clamp(0.0, 1.0);
+          final prevX = ((i - 1) * xStep) - scrollOffset + (chartWidth * (1 - properties.pathProgress.value));
+          final prevY = padding + chartHeight - (prevNormalized * chartHeight);
 
-        // Use shader for smooth gradient between data points
-        final gradient = ui.Gradient.linear(
-          Offset(x, y + metricHeight / 2),
-          Offset(x + width, y + metricHeight / 2),
-          [
-            _getHeatColor(value),
-            _getHeatColor(nextValue),
-          ],
-        );
+          final controlX = (prevX + x) / 2;
 
-        final paint = Paint()
-          ..shader = gradient
-          ..style = PaintingStyle.fill;
-
-        // Apply progress animation
-        if (properties.pathProgress.value < 1.0) {
-          final progress = properties.pathProgress.value;
-          final visibleWidth = size.width * progress;
-          if (x < visibleWidth) {
-            final clippedRect = Rect.fromLTWH(
-              x,
-              y,
-              (x + width > visibleWidth) ? (visibleWidth - x) : width,
-              metricHeight,
-            );
-            canvas.drawRect(clippedRect, paint);
-          }
-        } else {
-          canvas.drawRect(rect, paint);
+          path.quadraticBezierTo(controlX, prevY, x, y);
+          linePath.quadraticBezierTo(controlX, prevY, x, y);
         }
       }
-
-      // Draw metric label
-      if (metricIndex < metricLabels.length && properties.pathProgress.value > 0.5) {
-        final textPainter = TextPainter(
-          text: TextSpan(
-            text: metricLabels[metricIndex],
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              shadows: [
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 2,
-                  color: Colors.black45,
-                ),
-              ],
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        );
-
-        textPainter.layout();
-        textPainter.paint(
-          canvas,
-          Offset(8, y + (metricHeight - textPainter.height) / 2),
-        );
-      }
-
-      // Draw separator line
-      if (metricIndex < numMetrics - 1) {
-        final linePaint = Paint()
-          ..color = Colors.white.withValues(alpha: 0.1)
-          ..strokeWidth = 1;
-        canvas.drawLine(
-          Offset(0, y + metricHeight),
-          Offset(size.width, y + metricHeight),
-          linePaint,
-        );
-      }
     }
+
+    // Close the area path
+    if (!firstPoint) {
+      final lastX = (dataPoints.length - 1) * xStep - scrollOffset + (chartWidth * (1 - properties.pathProgress.value));
+      path.lineTo(lastX, size.height - padding);
+      path.close();
+
+      // Draw gradient fill
+      final gradient = ui.Gradient.linear(
+        Offset(0, padding),
+        Offset(0, size.height - padding),
+        [
+          gradientStartColor.withValues(alpha: 0.7),
+          gradientEndColor.withValues(alpha: 0.1),
+        ],
+      );
+
+      final fillPaint = Paint()
+        ..shader = gradient
+        ..style = PaintingStyle.fill;
+
+      canvas.drawPath(path, fillPaint);
+
+      // Draw line
+      final linePaint = Paint()
+        ..color = lineColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+
+      canvas.drawPath(linePath, linePaint);
+    }
+
+    // Draw grid lines
+    _drawGrid(canvas, size, padding, chartHeight);
+
+    // Draw axis labels
+    _drawLabels(canvas, size, padding, chartHeight);
+  }
+
+  void _drawGrid(Canvas canvas, Size size, double padding, double chartHeight) {
+    final gridPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.05)
+      ..strokeWidth = 1;
+
+    // Horizontal grid lines
+    for (int i = 0; i <= 4; i++) {
+      final y = padding + (chartHeight / 4) * i;
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        gridPaint,
+      );
+    }
+  }
+
+  void _drawLabels(Canvas canvas, Size size, double padding, double chartHeight) {
+    if (properties.pathProgress.value < 0.8) return;
+
+    // Draw min/max labels
+    final textStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.6),
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+    );
+
+    // Max value label
+    final maxText = TextPainter(
+      text: TextSpan(text: maxValue.toStringAsFixed(0), style: textStyle),
+      textDirection: TextDirection.ltr,
+    );
+    maxText.layout();
+    maxText.paint(canvas, Offset(4, padding - 12));
+
+    // Min value label
+    final minText = TextPainter(
+      text: TextSpan(text: minValue.toStringAsFixed(0), style: textStyle),
+      textDirection: TextDirection.ltr,
+    );
+    minText.layout();
+    minText.paint(canvas, Offset(4, size.height - padding - 2));
   }
 }
 
-/// System monitoring heat map demo widget
+/// Scrolling area chart demo widget
 class HeatMapDemo extends StatefulWidget {
   const HeatMapDemo({super.key});
 
@@ -206,18 +225,17 @@ class HeatMapDemo extends StatefulWidget {
 }
 
 class _HeatMapDemoState extends State<HeatMapDemo> {
-  static const int numMetrics = 4; // CPU, Memory, Network, Disk
-  static const int maxDataPoints = 60; // Show last 60 time points
-  static const List<String> metricLabels = [
-    'CPU',
-    'Memory',
-    'Network',
-    'Disk I/O',
-  ];
+  static const int maxDataPoints = 100;
+  static const double updateInterval = 200.0; // milliseconds
 
-  late final Signal<List<MetricData>> dataPoints;
-  late final HeatMapFSM fsm;
-  late final CanvasAnimationProperties canvasProps;
+  late final Signal<List<DataPoint>> cpuData;
+  late final Signal<List<DataPoint>> memoryData;
+  late final Signal<List<DataPoint>> networkData;
+  late final ChartFSM fsm;
+  late final CanvasAnimationProperties cpuProps;
+  late final CanvasAnimationProperties memoryProps;
+  late final CanvasAnimationProperties networkProps;
+  late final CanvasAnimationProperties scrollProps;
 
   Timer? _updateTimer;
   final math.Random _random = math.Random();
@@ -227,46 +245,69 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
   void initState() {
     super.initState();
 
-    dataPoints = signal(_generateInitialData());
+    cpuData = signal(_generateInitialData());
+    memoryData = signal(_generateInitialData());
+    networkData = signal(_generateInitialData());
 
-    canvasProps = CanvasAnimationProperties(
-      pathProgress: 0.0,
-    );
+    cpuProps = CanvasAnimationProperties(pathProgress: 0.0);
+    memoryProps = CanvasAnimationProperties(pathProgress: 0.0);
+    networkProps = CanvasAnimationProperties(pathProgress: 0.0);
+    scrollProps = CanvasAnimationProperties(rotation: 0.0); // Using rotation for scroll offset
 
-    fsm = HeatMapFSM(
-      HeatMapContext(
-        onUpdate: _addNewDataPoint,
-      ),
+    fsm = ChartFSM(
+      ChartContext(onUpdate: _addNewDataPoint),
     );
 
     _startAnimation();
   }
 
-  List<MetricData> _generateInitialData() {
-    final data = <MetricData>[];
+  List<DataPoint> _generateInitialData() {
+    final data = <DataPoint>[];
+    double value = 30 + _random.nextDouble() * 40;
+
     for (int i = 0; i < maxDataPoints; i++) {
-      data.add(MetricData(
-        timestamp: _currentTime++,
-        values: List.generate(numMetrics, (_) => _random.nextDouble() * 100),
+      // Generate smooth random walk
+      value += (_random.nextDouble() - 0.5) * 10;
+      value = value.clamp(10.0, 90.0);
+
+      data.add(DataPoint(
+        timestamp: _currentTime + i,
+        value: value,
       ));
     }
+
     return data;
   }
 
   void _addNewDataPoint() {
-    final currentData = List<MetricData>.from(dataPoints.value);
+    // Add new data point to each series
+    _addPointToSeries(cpuData);
+    _addPointToSeries(memoryData);
+    _addPointToSeries(networkData);
 
-    // Add new data point
-    currentData.add(MetricData(
-      timestamp: _currentTime++,
-      values: List.generate(numMetrics, (i) {
-        // Smooth transition from previous value
-        final prevValue = currentData.isNotEmpty && i < currentData.last.values.length
-            ? currentData.last.values[i]
-            : 50.0;
-        final delta = (_random.nextDouble() - 0.5) * 30;
-        return (prevValue + delta).clamp(0.0, 100.0);
-      }),
+    _currentTime++;
+
+    // Animate scroll offset
+    final currentOffset = scrollProps.rotation.value;
+    animate()
+        .to(scrollProps.rotation, currentOffset + 2.0)
+        .withDuration(updateInterval.toInt())
+        .withEasing(Easing.linear)
+        .build()
+        .play();
+  }
+
+  void _addPointToSeries(Signal<List<DataPoint>> series) {
+    final currentData = List<DataPoint>.from(series.value);
+
+    // Generate new value based on previous
+    final prevValue = currentData.isNotEmpty ? currentData.last.value : 50.0;
+    final delta = (_random.nextDouble() - 0.5) * 15;
+    final newValue = (prevValue + delta).clamp(10.0, 90.0);
+
+    currentData.add(DataPoint(
+      timestamp: _currentTime + maxDataPoints,
+      value: newValue,
     ));
 
     // Keep only last maxDataPoints
@@ -274,35 +315,22 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
       currentData.removeAt(0);
     }
 
-    dataPoints.value = currentData;
-
-    // Quick animation for new data
-    canvasProps.pathProgress.value = 0.95;
-    animate()
-        .to(canvasProps.pathProgress, 1.0)
-        .withDuration(200)
-        .withEasing(Easing.easeOutCubic)
-        .build()
-        .play();
+    series.value = currentData;
   }
 
   void _startAnimation() {
-    // Initial animation
-    canvasProps.pathProgress.value = 0.0;
-    animate()
-        .to(canvasProps.pathProgress, 1.0)
-        .withDuration(1500)
-        .withEasing(Easing.easeOutCubic)
-        .build()
-        .play();
+    // Set charts to fully visible immediately for real-time display
+    cpuProps.pathProgress.value = 1.0;
+    memoryProps.pathProgress.value = 1.0;
+    networkProps.pathProgress.value = 1.0;
 
-    // Start periodic updates (simulate real-time data)
-    _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+    // Start periodic updates immediately - real-time streaming
+    _updateTimer = Timer.periodic(Duration(milliseconds: updateInterval.toInt()), (_) {
       if (mounted) {
-        fsm.send(HeatMapEvent.startUpdate);
+        fsm.send(ChartEvent.startUpdate);
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted) {
-            fsm.send(HeatMapEvent.updateComplete);
+            fsm.send(ChartEvent.updateComplete);
           }
         });
       }
@@ -310,16 +338,17 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
   }
 
   void _trigger() {
-    canvasProps.pathProgress.value = 0.0;
+    // Reset to initial state for demo trigger
     _currentTime = 0;
-    dataPoints.value = _generateInitialData();
+    scrollProps.rotation.value = 0.0;
+    cpuData.value = _generateInitialData();
+    memoryData.value = _generateInitialData();
+    networkData.value = _generateInitialData();
 
-    animate()
-        .to(canvasProps.pathProgress, 1.0)
-        .withDuration(1500)
-        .withEasing(Easing.easeOutCubic)
-        .build()
-        .play();
+    // Keep fully visible for real-time display
+    cpuProps.pathProgress.value = 1.0;
+    memoryProps.pathProgress.value = 1.0;
+    networkProps.pathProgress.value = 1.0;
   }
 
   @override
@@ -329,24 +358,74 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
     super.dispose();
   }
 
+  Widget _buildChart({
+    required String label,
+    required Signal<List<DataPoint>> data,
+    required CanvasAnimationProperties props,
+    required Color lineColor,
+    required Color gradientStart,
+    required Color gradientEnd,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 4),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white70,
+            ),
+          ),
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return KitoCanvas(
+                painter: ScrollingAreaChartPainter(
+                  props,
+                  dataPoints: data.value,
+                  minValue: 0.0,
+                  maxValue: 100.0,
+                  lineColor: lineColor,
+                  gradientStartColor: gradientStart,
+                  gradientEndColor: gradientEnd,
+                  scrollOffset: scrollProps.rotation.value,
+                ),
+                size: Size(constraints.maxWidth, constraints.maxHeight),
+                willChange: true,
+                isComplex: true,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DemoCard(
-      title: 'System Monitoring Heat Map',
-      description: 'Real-time CPU/system metrics visualization with gradient heat colors',
+      title: 'Real-time Streaming Charts',
+      description: 'Live data visualization with scrolling gradient area charts',
       codeSnippet: '''
-// System monitoring heat map
-final painter = SystemHeatMapPainter(
-  canvasProps,
-  dataPoints: dataPoints.value,
-  numMetrics: 4,
+// Scrolling area chart with gradient fills
+final painter = ScrollingAreaChartPainter(
+  props,
+  dataPoints: cpuData.value,
+  minValue: 0.0,
   maxValue: 100.0,
-  metricLabels: ['CPU', 'Memory', 'Network', 'Disk I/O'],
+  lineColor: Color(0xFF3498DB),
+  gradientStartColor: Color(0xFF3498DB),
+  gradientEndColor: Color(0xFF3498DB).withValues(alpha: 0.1),
+  scrollOffset: scrollProps.rotation.value,
 );
 
-// Add new data point every 500ms
-Timer.periodic(Duration(milliseconds: 500), (_) {
-  fsm.send(HeatMapEvent.startUpdate);
+// Update every 200ms
+Timer.periodic(Duration(milliseconds: 200), (_) {
+  fsm.send(ChartEvent.startUpdate);
 });
 ''',
       child: ClickableDemo(
@@ -356,21 +435,41 @@ Timer.periodic(Duration(milliseconds: 500), (_) {
             builder: (_) {
               return SizedBox(
                 height: 300,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return KitoCanvas(
-                      painter: SystemHeatMapPainter(
-                        canvasProps,
-                        dataPoints: dataPoints.value,
-                        numMetrics: numMetrics,
-                        maxValue: 100.0,
-                        metricLabels: metricLabels,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _buildChart(
+                        label: 'CPU Usage',
+                        data: cpuData,
+                        props: cpuProps,
+                        lineColor: const Color(0xFF3498DB),
+                        gradientStart: const Color(0xFF3498DB),
+                        gradientEnd: const Color(0xFF3498DB),
                       ),
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
-                      willChange: true,
-                      isComplex: true,
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: _buildChart(
+                        label: 'Memory',
+                        data: memoryData,
+                        props: memoryProps,
+                        lineColor: const Color(0xFF9B59B6),
+                        gradientStart: const Color(0xFF9B59B6),
+                        gradientEnd: const Color(0xFF9B59B6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: _buildChart(
+                        label: 'Network',
+                        data: networkData,
+                        props: networkProps,
+                        lineColor: const Color(0xFF2ECC71),
+                        gradientStart: const Color(0xFF2ECC71),
+                        gradientEnd: const Color(0xFF2ECC71),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
