@@ -1,5 +1,10 @@
 name: Deploy Kito Demo to GitHub Pages
 
+# To enable this workflow:
+# 1. Go to repository Settings > Pages
+# 2. Under "Build and deployment" > "Source", select "GitHub Actions"
+# 3. Save and re-run this workflow
+
 on:
   push:
     branches:
