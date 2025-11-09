@@ -1149,12 +1149,14 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
   static const gap = 8.0;
 
   List<Photo> photos = [];
-  int? expandedPhotoId;
-  bool isAnimating = false;
+  late final Signal<int?> expandedPhotoId;
+  late final Signal<bool> isAnimating;
 
   @override
   void initState() {
     super.initState();
+    expandedPhotoId = signal<int?>(null);
+    isAnimating = signal<bool>(false);
     _initializePhotos();
   }
 
@@ -1187,9 +1189,9 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
   }
 
   void _trigger() {
-    if (isAnimating) return;
+    if (isAnimating.value) return;
 
-    if (expandedPhotoId != null) {
+    if (expandedPhotoId.value != null) {
       _collapsePhoto();
     } else {
       _expandPhoto(photos[0].id);
@@ -1197,12 +1199,10 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
   }
 
   Future<void> _expandPhoto(int photoId) async {
-    if (isAnimating || expandedPhotoId != null) return;
+    if (isAnimating.value || expandedPhotoId.value != null) return;
 
-    setState(() {
-      isAnimating = true;
-      expandedPhotoId = photoId;
-    });
+    isAnimating.value = true;
+    expandedPhotoId.value = photoId;
 
     final photo = photos.firstWhere((p) => p.id == photoId);
 
@@ -1231,13 +1231,13 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
     parallel([expandAnim, ...fadeAnims]);
 
     await Future.delayed(const Duration(milliseconds: 400));
-    setState(() => isAnimating = false);
+    isAnimating.value = false;
   }
 
   Future<void> _collapsePhoto() async {
-    if (isAnimating || expandedPhotoId == null) return;
+    if (isAnimating.value || expandedPhotoId.value == null) return;
 
-    setState(() => isAnimating = true);
+    isAnimating.value = true;
 
     final List<KitoAnimation> animations = [];
 
@@ -1262,16 +1262,14 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
     parallel(animations);
 
     await Future.delayed(const Duration(milliseconds: 400));
-    setState(() {
-      isAnimating = false;
-      expandedPhotoId = null;
-    });
+    isAnimating.value = false;
+    expandedPhotoId.value = null;
   }
 
   void _onPhotoTap(int photoId) {
-    if (expandedPhotoId == null) {
+    if (expandedPhotoId.value == null) {
       _expandPhoto(photoId);
-    } else if (expandedPhotoId == photoId) {
+    } else if (expandedPhotoId.value == photoId) {
       _collapsePhoto();
     }
   }
@@ -1325,9 +1323,9 @@ parallel([expandAnim, ...fadeAnims]);
               ...photos.map((photo) => _buildPhoto(photo)),
 
               // Detail view overlay when photo is expanded
-              if (expandedPhotoId != null)
+              if (expandedPhotoId.value != null)
                 _buildDetailOverlay(
-                  photos.firstWhere((p) => p.id == expandedPhotoId),
+                  photos.firstWhere((p) => p.id == expandedPhotoId.value),
                 ),
             ],
           ),
@@ -1337,7 +1335,8 @@ parallel([expandAnim, ...fadeAnims]);
   }
 
   Widget _buildPhoto(Photo photo) {
-    final isExpanded = expandedPhotoId == photo.id;
+    final isExpanded = expandedPhotoId.value == photo.id;
+    final shouldShowExpandedContent = isExpanded && !isAnimating.value;
 
     return Positioned(
       left: photo.position.value.dx,
@@ -1368,7 +1367,7 @@ parallel([expandAnim, ...fadeAnims]);
                   size: isExpanded ? 64 : 32,
                   color: Colors.white.withOpacity(0.9),
                 ),
-                if (isExpanded) ...[
+                if (shouldShowExpandedContent) ...[
                   const SizedBox(height: 16),
                   Text(
                     photo.title,
