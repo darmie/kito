@@ -1,28 +1,28 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_fsm/kito_fsm.dart';
 import 'demo_card.dart';
 import 'clickable_demo.dart';
 
-/// Heat map cell data model
-class HeatMapCell {
-  final int row;
-  final int col;
-  final double value;
+/// System monitoring heat map showing CPU-style utilization over time
+/// Data point representing a metric at a specific time
+class MetricData {
+  final double timestamp;
+  final List<double> values; // Multiple metrics (CPU cores, memory, etc.)
 
-  const HeatMapCell({
-    required this.row,
-    required this.col,
-    required this.value,
+  const MetricData({
+    required this.timestamp,
+    required this.values,
   });
 }
 
 /// Heat map state machine states
 enum HeatMapState { idle, updating, animating }
 
-enum HeatMapEvent { startUpdate, updateComplete, hover, leave }
+enum HeatMapEvent { startUpdate, updateComplete }
 
 class HeatMapContext {
   final void Function() onUpdate;
@@ -51,14 +51,6 @@ class HeatMapFSM extends KitoStateMachine<HeatMapState, HeatMapEvent, HeatMapCon
                 onEntry: (context, from, to) => context.onUpdate(),
                 transitions: {
                   HeatMapEvent.updateComplete: TransitionConfig(
-                    target: HeatMapState.animating,
-                  ),
-                },
-              ),
-              HeatMapState.animating: StateConfig(
-                state: HeatMapState.animating,
-                transitions: {
-                  HeatMapEvent.updateComplete: TransitionConfig(
                     target: HeatMapState.idle,
                   ),
                 },
@@ -68,85 +60,144 @@ class HeatMapFSM extends KitoStateMachine<HeatMapState, HeatMapEvent, HeatMapCon
         );
 }
 
-/// Heat map painter using canvas
-class HeatMapPainter extends KitoPainter {
-  final List<List<double>> data;
+/// CPU/System monitoring style heat map painter
+class SystemHeatMapPainter extends KitoPainter {
+  final List<MetricData> dataPoints;
+  final int numMetrics;
   final double maxValue;
-  final int? hoveredRow;
-  final int? hoveredCol;
+  final List<String> metricLabels;
 
-  HeatMapPainter(
+  SystemHeatMapPainter(
     super.properties, {
-    required this.data,
+    required this.dataPoints,
+    required this.numMetrics,
     required this.maxValue,
-    this.hoveredRow,
-    this.hoveredCol,
+    required this.metricLabels,
   });
+
+  Color _getHeatColor(double value) {
+    final normalized = maxValue > 0 ? (value / maxValue).clamp(0.0, 1.0) : 0.0;
+
+    // Color gradient: green (low) -> yellow (medium) -> red (high)
+    if (normalized < 0.5) {
+      return Color.lerp(
+        const Color(0xFF2ECC71), // Green
+        const Color(0xFFF39C12), // Yellow
+        normalized * 2,
+      )!;
+    } else {
+      return Color.lerp(
+        const Color(0xFFF39C12), // Yellow
+        const Color(0xFFE74C3C), // Red
+        (normalized - 0.5) * 2,
+      )!;
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
+    if (dataPoints.isEmpty || numMetrics == 0) return;
 
-    final rows = data.length;
-    final cols = data[0].length;
-    final cellWidth = size.width / cols;
-    final cellHeight = size.height / rows;
+    final metricHeight = size.height / numMetrics;
+    final timeStep = size.width / (dataPoints.length - 1).clamp(1, double.infinity);
 
-    for (int row = 0; row < rows; row++) {
-      for (int col = 0; col < cols; col++) {
-        final value = data[row][col];
-        final normalizedValue = maxValue > 0 ? value / maxValue : 0.0;
+    // Draw heat map with gradient rectangles
+    for (int metricIndex = 0; metricIndex < numMetrics; metricIndex++) {
+      final y = metricIndex * metricHeight;
 
-        // Apply progress animation
-        final animatedValue = normalizedValue * properties.pathProgress.value;
+      for (int i = 0; i < dataPoints.length - 1; i++) {
+        final data = dataPoints[i];
+        final nextData = dataPoints[i + 1];
 
-        // Color gradient from blue (cold) to red (hot)
-        final color = Color.lerp(
-          const Color(0xFF3498DB),
-          const Color(0xFFE74C3C),
-          animatedValue,
-        )!;
+        if (metricIndex >= data.values.length) continue;
 
-        final rect = Rect.fromLTWH(
-          col * cellWidth,
-          row * cellHeight,
-          cellWidth,
-          cellHeight,
+        final value = data.values[metricIndex];
+        final nextValue = metricIndex < nextData.values.length
+            ? nextData.values[metricIndex]
+            : value;
+
+        final x = i * timeStep;
+        final width = timeStep + 1; // Add 1 to prevent gaps
+
+        // Create gradient rect
+        final rect = Rect.fromLTWH(x, y, width, metricHeight);
+
+        // Use shader for smooth gradient between data points
+        final gradient = ui.Gradient.linear(
+          Offset(x, y + metricHeight / 2),
+          Offset(x + width, y + metricHeight / 2),
+          [
+            _getHeatColor(value),
+            _getHeatColor(nextValue),
+          ],
         );
 
-        // Apply scale if hovered
-        final isHovered = row == hoveredRow && col == hoveredCol;
-        if (isHovered) {
-          canvas.save();
-          final center = rect.center;
-          canvas.translate(center.dx, center.dy);
-          canvas.scale(properties.scale.value);
-          canvas.translate(-center.dx, -center.dy);
-        }
-
         final paint = Paint()
-          ..color = color
+          ..shader = gradient
           ..style = PaintingStyle.fill;
 
-        canvas.drawRect(rect, paint);
-
-        // Draw border
-        final borderPaint = Paint()
-          ..color = Colors.white.withOpacity(0.2)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = isHovered ? 2.0 : 1.0;
-
-        canvas.drawRect(rect, borderPaint);
-
-        if (isHovered) {
-          canvas.restore();
+        // Apply progress animation
+        if (properties.pathProgress.value < 1.0) {
+          final progress = properties.pathProgress.value;
+          final visibleWidth = size.width * progress;
+          if (x < visibleWidth) {
+            final clippedRect = Rect.fromLTWH(
+              x,
+              y,
+              (x + width > visibleWidth) ? (visibleWidth - x) : width,
+              metricHeight,
+            );
+            canvas.drawRect(clippedRect, paint);
+          }
+        } else {
+          canvas.drawRect(rect, paint);
         }
+      }
+
+      // Draw metric label
+      if (metricIndex < metricLabels.length && properties.pathProgress.value > 0.5) {
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: metricLabels[metricIndex],
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 2,
+                  color: Colors.black45,
+                ),
+              ],
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(8, y + (metricHeight - textPainter.height) / 2),
+        );
+      }
+
+      // Draw separator line
+      if (metricIndex < numMetrics - 1) {
+        final linePaint = Paint()
+          ..color = Colors.white.withValues(alpha: 0.1)
+          ..strokeWidth = 1;
+        canvas.drawLine(
+          Offset(0, y + metricHeight),
+          Offset(size.width, y + metricHeight),
+          linePaint,
+        );
       }
     }
   }
 }
 
-/// Heat map demo widget
+/// System monitoring heat map demo widget
 class HeatMapDemo extends StatefulWidget {
   const HeatMapDemo({super.key});
 
@@ -155,96 +206,104 @@ class HeatMapDemo extends StatefulWidget {
 }
 
 class _HeatMapDemoState extends State<HeatMapDemo> {
-  static const int rows = 10;
-  static const int cols = 15;
+  static const int numMetrics = 4; // CPU, Memory, Network, Disk
+  static const int maxDataPoints = 60; // Show last 60 time points
+  static const List<String> metricLabels = [
+    'CPU',
+    'Memory',
+    'Network',
+    'Disk I/O',
+  ];
 
-  late final Signal<List<List<double>>> heatMapData;
-  late final Signal<double> maxValue;
-  late final Signal<int?> hoveredRow;
-  late final Signal<int?> hoveredCol;
+  late final Signal<List<MetricData>> dataPoints;
   late final HeatMapFSM fsm;
   late final CanvasAnimationProperties canvasProps;
 
   Timer? _updateTimer;
   final math.Random _random = math.Random();
+  double _currentTime = 0;
 
   @override
   void initState() {
     super.initState();
-    heatMapData = signal(_generateInitialData());
-    maxValue = signal(100.0);
-    hoveredRow = signal(null);
-    hoveredCol = signal(null);
+
+    dataPoints = signal(_generateInitialData());
 
     canvasProps = CanvasAnimationProperties(
       pathProgress: 0.0,
-      scale: 1.0,
     );
 
     fsm = HeatMapFSM(
       HeatMapContext(
-        onUpdate: _updateHeatMapData,
+        onUpdate: _addNewDataPoint,
       ),
     );
 
     _startAnimation();
   }
 
-  List<List<double>> _generateInitialData() {
-    return List.generate(
-      rows,
-      (row) => List.generate(
-        cols,
-        (col) => _random.nextDouble() * 100,
-      ),
-    );
+  List<MetricData> _generateInitialData() {
+    final data = <MetricData>[];
+    for (int i = 0; i < maxDataPoints; i++) {
+      data.add(MetricData(
+        timestamp: _currentTime++,
+        values: List.generate(numMetrics, (_) => _random.nextDouble() * 100),
+      ));
+    }
+    return data;
   }
 
-  void _updateHeatMapData() {
-    // Simulate real-time data update with smooth transitions
-    final newData = List.generate(
-      rows,
-      (row) => List.generate(
-        cols,
-        (col) {
-          final oldValue = heatMapData.value[row][col];
-          final delta = (_random.nextDouble() - 0.5) * 20;
-          return (oldValue + delta).clamp(0.0, 100.0);
-        },
-      ),
-    );
+  void _addNewDataPoint() {
+    final currentData = List<MetricData>.from(dataPoints.value);
 
-    heatMapData.value = newData;
-    maxValue.value = 100.0;
+    // Add new data point
+    currentData.add(MetricData(
+      timestamp: _currentTime++,
+      values: List.generate(numMetrics, (i) {
+        // Smooth transition from previous value
+        final prevValue = currentData.isNotEmpty && i < currentData.last.values.length
+            ? currentData.last.values[i]
+            : 50.0;
+        final delta = (_random.nextDouble() - 0.5) * 30;
+        return (prevValue + delta).clamp(0.0, 100.0);
+      }),
+    ));
 
-    // Animate the update
+    // Keep only last maxDataPoints
+    if (currentData.length > maxDataPoints) {
+      currentData.removeAt(0);
+    }
+
+    dataPoints.value = currentData;
+
+    // Quick animation for new data
+    canvasProps.pathProgress.value = 0.95;
     animate()
         .to(canvasProps.pathProgress, 1.0)
-        .withDuration(800)
+        .withDuration(200)
         .withEasing(Easing.easeOutCubic)
         .build()
         .play();
   }
 
   void _startAnimation() {
-    // Reset progress
-    canvasProps.pathProgress.value = 0.0;
-
     // Initial animation
+    canvasProps.pathProgress.value = 0.0;
     animate()
         .to(canvasProps.pathProgress, 1.0)
-        .withDuration(1200)
+        .withDuration(1500)
         .withEasing(Easing.easeOutCubic)
         .build()
         .play();
 
-    // Start periodic updates
-    _updateTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    // Start periodic updates (simulate real-time data)
+    _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       if (mounted) {
-        canvasProps.pathProgress.value = 0.0;
         fsm.send(HeatMapEvent.startUpdate);
-        Future.delayed(const Duration(milliseconds: 100), () {
-          fsm.send(HeatMapEvent.updateComplete);
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            fsm.send(HeatMapEvent.updateComplete);
+          }
         });
       }
     });
@@ -252,8 +311,15 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
 
   void _trigger() {
     canvasProps.pathProgress.value = 0.0;
-    heatMapData.value = _generateInitialData();
-    _startAnimation();
+    _currentTime = 0;
+    dataPoints.value = _generateInitialData();
+
+    animate()
+        .to(canvasProps.pathProgress, 1.0)
+        .withDuration(1500)
+        .withEasing(Easing.easeOutCubic)
+        .build()
+        .play();
   }
 
   @override
@@ -266,72 +332,39 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
   @override
   Widget build(BuildContext context) {
     return DemoCard(
-      title: 'Real-time Heat Map',
-      description: 'Animated heat map visualization with live data updates',
+      title: 'System Monitoring Heat Map',
+      description: 'Real-time CPU/system metrics visualization with gradient heat colors',
       codeSnippet: '''
-// Heat map with canvas painter
-final painter = HeatMapPainter(
+// System monitoring heat map
+final painter = SystemHeatMapPainter(
   canvasProps,
-  data: heatMapData.value,
-  maxValue: maxValue.value,
+  dataPoints: dataPoints.value,
+  numMetrics: 4,
+  maxValue: 100.0,
+  metricLabels: ['CPU', 'Memory', 'Network', 'Disk I/O'],
 );
 
-animate(
-  canvasProps.pathProgress,
-  to: 1.0,
-  duration: Duration(milliseconds: 800),
-  easing: Easing.easeOutCubic,
-);
+// Add new data point every 500ms
+Timer.periodic(Duration(milliseconds: 500), (_) {
+  fsm.send(HeatMapEvent.startUpdate);
+});
 ''',
       child: ClickableDemo(
         onTrigger: _trigger,
         builder: (context) => Builder(
           builder: (builderContext) => ReactiveBuilder(
             builder: (_) {
-              return MouseRegion(
-              onHover: (event) {
-                final size = context.size;
-                if (size != null) {
-                  final cellWidth = size.width / cols;
-                  final cellHeight = size.height / rows;
-                  final col = (event.localPosition.dx / cellWidth).floor();
-                  final row = (event.localPosition.dy / cellHeight).floor();
-
-                  if (col >= 0 && col < cols && row >= 0 && row < rows) {
-                    hoveredRow.value = row;
-                    hoveredCol.value = col;
-
-                    // Animate scale on hover
-                    animate()
-                        .to(canvasProps.scale, 1.1)
-                        .withDuration(150)
-                        .withEasing(Easing.easeOutCubic)
-                        .build()
-                        .play();
-                  }
-                }
-              },
-              onExit: (_) {
-                hoveredRow.value = null;
-                hoveredCol.value = null;
-                animate()
-                    .to(canvasProps.scale, 1.0)
-                    .withDuration(150)
-                    .withEasing(Easing.easeOutCubic)
-                    .build()
-                    .play();
-              },
-              child: SizedBox(
+              return SizedBox(
                 height: 300,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return KitoCanvas(
-                      painter: HeatMapPainter(
+                      painter: SystemHeatMapPainter(
                         canvasProps,
-                        data: heatMapData.value,
-                        maxValue: maxValue.value,
-                        hoveredRow: hoveredRow.value,
-                        hoveredCol: hoveredCol.value,
+                        dataPoints: dataPoints.value,
+                        numMetrics: numMetrics,
+                        maxValue: 100.0,
+                        metricLabels: metricLabels,
                       ),
                       size: Size(constraints.maxWidth, constraints.maxHeight),
                       willChange: true,
@@ -339,8 +372,7 @@ animate(
                     );
                   },
                 ),
-              ),
-            );
+              );
             },
           ),
         ),
