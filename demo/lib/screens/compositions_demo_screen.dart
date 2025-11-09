@@ -312,17 +312,24 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
       hadAnyMatches = true;
       combo.value++;
 
-      // Animate matched tiles out
+      // Animate matched tiles out in parallel
+      final fadeOutAnims = <KitoAnimation>[];
       for (final pos in matches) {
         final tile = grid[pos.$1][pos.$2];
         if (tile != null) {
           tile.isMatched = true;
           // Zoom out + fade
-          zoomOut(tile.scale, tile.opacity).play();
+          fadeOutAnims.add(zoomOut(tile.scale, tile.opacity));
         }
       }
 
-      await Future.delayed(const Duration(milliseconds: 400));
+      // Start fade out animations in parallel
+      if (fadeOutAnims.isNotEmpty) {
+        parallel(fadeOutAnims);
+      }
+
+      // Wait briefly for fade out to start, then begin gravity simultaneously
+      await Future.delayed(const Duration(milliseconds: 150));
 
       // Remove matched tiles
       for (final pos in matches) {
@@ -332,13 +339,18 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
       // Update score
       score.value += matches.length * 10 * combo.value;
 
-      // Apply gravity
-      await _applyGravity();
+      // Start gravity and spawning in parallel with overlapping timing
+      final gravityFuture = _applyGravity();
 
-      // Spawn new tiles
-      await _spawnNewTiles();
-
+      // Wait a bit for gravity to start, then spawn new tiles
       await Future.delayed(const Duration(milliseconds: 200));
+      final spawnFuture = _spawnNewTiles();
+
+      // Wait for both to complete
+      await Future.wait([gravityFuture, spawnFuture]);
+
+      // Small delay before checking for new matches
+      await Future.delayed(const Duration(milliseconds: 100));
     }
 
     return hadAnyMatches;
@@ -389,6 +401,8 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   }
 
   Future<void> _applyGravity() async {
+    final fallAnims = <KitoAnimation>[];
+
     for (var col = 0; col < cols; col++) {
       // Count empty spaces from bottom
       var emptyCount = 0;
@@ -402,12 +416,13 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
 
           // Animate fall
           final targetPos = _getPosition(newRow, col);
-          animate()
+          final fallAnim = animate()
               .to(tile.position, targetPos)
-              .withDuration(300 + emptyCount * 50)
+              .withDuration(250 + emptyCount * 30)
               .withEasing(Easing.easeInCubic)
-              .build()
-              .play();
+              .build();
+
+          fallAnims.add(fallAnim);
 
           grid[newRow][col] = tile;
           grid[row][col] = null;
@@ -415,10 +430,17 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
       }
     }
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Animate all falling tiles in parallel
+    if (fallAnims.isNotEmpty) {
+      parallel(fallAnims);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 350));
   }
 
   Future<void> _spawnNewTiles() async {
+    final spawnAnims = <KitoAnimation>[];
+
     for (var col = 0; col < cols; col++) {
       for (var row = 0; row < rows; row++) {
         if (grid[row][col] == null) {
@@ -429,22 +451,29 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
 
           // Animate fall
           final targetPos = _getPosition(row, col);
-          animate()
+          final fallAnim = animate()
               .to(tile.position, targetPos)
-              .withDuration(400)
+              .withDuration(350)
               .withEasing(Easing.easeInOutBounce)
-              .build()
-              .play();
+              .build();
 
           // Scale in
-          scaleIn(tile.scale, config: const ScaleConfig(duration: 300)).play();
+          final scaleAnim = scaleIn(tile.scale, config: const ScaleConfig(duration: 250));
+
+          spawnAnims.add(fallAnim);
+          spawnAnims.add(scaleAnim);
 
           grid[row][col] = tile;
         }
       }
     }
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Animate all spawning tiles in parallel
+    if (spawnAnims.isNotEmpty) {
+      parallel(spawnAnims);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 400));
   }
 
   KitoAnimation zoomOut(
@@ -492,10 +521,8 @@ final hadMatches = await _processMatches();
 if (!hadMatches) {
   parallel([swapBackAnim1, swapBackAnim2]);
 }''',
-      child: ClickableDemo(
-        onTrigger: _trigger,
-        builder: (_) => ReactiveBuilder(
-        builder: (__) => Container(
+      child: ReactiveBuilder(
+        builder: (context) => Container(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -540,6 +567,20 @@ if (!hadMatches) {
                     const SizedBox(height: 12),
                     if (combo.value > 1)
                       _statRow(context, 'Combo', '${combo.value}x', highlight: true),
+                    const SizedBox(height: 12),
+
+                    // Reset button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _trigger,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Reset Game'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
 
                     // Game state
@@ -585,7 +626,6 @@ if (!hadMatches) {
               ),
             ],
           ),
-        ),
         ),
       ),
     );
