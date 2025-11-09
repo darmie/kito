@@ -57,6 +57,7 @@ class _SwipeToDeleteDemoState extends State<SwipeToDeleteDemo> {
 
   final Map<int, SwipeToDeleteStateMachine> _machines = {};
   final Map<int, Offset> _dragStarts = {}; // Per-item drag start tracking
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   late final Signal<List<SwipeItem>> items;
   late final Signal<int> deleteCount;
 
@@ -83,8 +84,19 @@ class _SwipeToDeleteDemoState extends State<SwipeToDeleteDemo> {
   }
 
   void _deleteItem(int itemId) {
-    items.value = items.value.where((i) => i.id != itemId).toList();
-    // Don't dispose machine yet - let it finish animations
+    final index = items.value.indexWhere((i) => i.id == itemId);
+    if (index == -1) return;
+
+    final removedItem = items.value[index];
+    items.value = List.from(items.value)..removeAt(index);
+
+    // Trigger AnimatedList removal with parallel animation
+    _listKey.currentState?.removeItem(
+      index,
+      (context, animation) => _buildRemovedItem(removedItem, animation),
+      duration: const Duration(milliseconds: 300),
+    );
+
     deleteCount.value++;
   }
 
@@ -175,11 +187,15 @@ onHorizontalDragEnd: (_) =>
                       ],
                     ),
                   )
-                : ListView.builder(
-                    itemCount: items.value.length,
-                    itemBuilder: (context, index) {
+                : AnimatedList(
+                    key: _listKey,
+                    initialItemCount: items.value.length,
+                    itemBuilder: (context, index, animation) {
+                      if (index >= items.value.length) {
+                        return const SizedBox.shrink();
+                      }
                       final item = items.value[index];
-                      return _buildItem(context, item);
+                      return _buildAnimatedItem(item, animation);
                     },
                   ),
           ),
@@ -197,148 +213,200 @@ onHorizontalDragEnd: (_) =>
     );
   }
 
-  Widget _buildItem(BuildContext context, SwipeItem item) {
+  // Build item with slide-in animation for AnimatedList
+  Widget _buildAnimatedItem(SwipeItem item, Animation<double> animation) {
     final machine = _machines[item.id];
-    if (machine == null) return const SizedBox.shrink(); // Item deleted
-    final ctx = machine.context;
+    if (machine == null) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ReactiveBuilder(
-        builder: (_) {
-          final swipeProgress = (ctx.swipeOffset.value.dx.abs() / 80.0).clamp(0.0, 1.0);
-
-          return Stack(
-            children: [
-              // Delete indicator background
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.error.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .error
-                        .withOpacity(ctx.backgroundOpacity.value),
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: ctx.swipeOffset.value.dx > 0
-                      ? MainAxisAlignment.start
-                      : MainAxisAlignment.end,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Icon(
-                        Icons.delete,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .error
-                            .withOpacity(ctx.backgroundOpacity.value),
-                        size: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Item card
-              Transform.translate(
-                offset: ctx.swipeOffset.value,
-                child: Transform.scale(
-                  scale: ctx.scale.value,
-                  child: Opacity(
-                    opacity: ctx.opacity.value,
-                    child: GestureDetector(
-                      onHorizontalDragStart: (details) {
-                        _dragStarts[item.id] = details.localPosition;
-                        machine.send(SwipeEvent.dragStart);
-                      },
-                      onHorizontalDragUpdate: (details) {
-                        final dragStart = _dragStarts[item.id];
-                        if (dragStart == null) return;
-                        final deltaX = details.localPosition.dx - dragStart.dx;
-                        machine.updateDrag(deltaX);
-                      },
-                      onHorizontalDragEnd: (details) {
-                        _dragStarts.remove(item.id);
-                        machine.send(SwipeEvent.dragEnd);
-                      },
-                      child: Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: machine.currentState.value == SwipeState.dragging
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.2),
-                            width: machine.currentState.value == SwipeState.dragging ? 2 : 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(
-                                  machine.currentState.value == SwipeState.dragging ? 0.2 : 0.1),
-                              blurRadius: machine.currentState.value == SwipeState.dragging ? 8 : 4,
-                              offset: Offset(0, machine.currentState.value == SwipeState.dragging ? 4 : 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 12),
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: item.color.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                item.icon,
-                                size: 18,
-                                color: item.color,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                item.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      fontWeight: machine.currentState.value == SwipeState.dragging
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.drag_indicator,
-                              size: 20,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.3),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+    return SizeTransition(
+      key: ValueKey(item.id),
+      sizeFactor: animation,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: ReactiveBuilder(
+          builder: (context) => _buildItemContent(item, machine),
+        ),
       ),
     );
+  }
+
+  // Build removed item with slide-out animation
+  Widget _buildRemovedItem(SwipeItem item, Animation<double> animation) {
+    final machine = _machines[item.id];
+    if (machine == null) return const SizedBox.shrink();
+
+    return SizeTransition(
+      key: ValueKey(item.id),
+      sizeFactor: animation,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: ReactiveBuilder(
+          builder: (context) => _buildItemContent(item, machine),
+        ),
+      ),
+    );
+  }
+
+  // Build the actual item content (reused for both animated and removed items)
+  Widget _buildItemContent(SwipeItem item, SwipeToDeleteStateMachine machine) {
+    final ctx = machine.context;
+
+    return Stack(
+          children: [
+            // Delete indicator background
+            Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.error.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .error
+                      .withOpacity(ctx.backgroundOpacity.value),
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: ctx.swipeOffset.value.dx > 0
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.end,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.delete,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .error
+                          .withOpacity(ctx.backgroundOpacity.value),
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Item card
+            Transform.translate(
+              offset: ctx.swipeOffset.value,
+              child: Transform.scale(
+                scale: ctx.scale.value,
+                child: Opacity(
+                  opacity: ctx.opacity.value,
+                  child: GestureDetector(
+                    onHorizontalDragStart: (details) {
+                      _dragStarts[item.id] = details.localPosition;
+                      try {
+                        machine.send(SwipeEvent.dragStart);
+                      } catch (_) {
+                        // Machine disposed - ignore
+                      }
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      final dragStart = _dragStarts[item.id];
+                      if (dragStart == null) return;
+                      final deltaX = details.localPosition.dx - dragStart.dx;
+                      try {
+                        machine.updateDrag(deltaX);
+                      } catch (_) {
+                        // Machine disposed - ignore
+                      }
+                    },
+                    onHorizontalDragEnd: (details) {
+                      _dragStarts.remove(item.id);
+                      try {
+                        machine.send(SwipeEvent.dragEnd);
+                      } catch (_) {
+                        // Machine disposed - ignore
+                      }
+                    },
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color:
+                              machine.currentState.value == SwipeState.dragging
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.2),
+                          width:
+                              machine.currentState.value == SwipeState.dragging
+                                  ? 2
+                                  : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                                machine.currentState.value ==
+                                        SwipeState.dragging
+                                    ? 0.2
+                                    : 0.1),
+                            blurRadius: machine.currentState.value ==
+                                    SwipeState.dragging
+                                ? 8
+                                : 4,
+                            offset: Offset(
+                                0,
+                                machine.currentState.value ==
+                                        SwipeState.dragging
+                                    ? 4
+                                    : 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: item.color.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              item.icon,
+                              size: 18,
+                              color: item.color,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: machine.currentState.value ==
+                                            SwipeState.dragging
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.drag_indicator,
+                            size: 20,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.3),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
   }
 }
