@@ -24,7 +24,10 @@ class DashboardDemoScreen extends StatelessWidget {
               child: _AdvancedDashboardDemo(),
             ),
             SizedBox(height: 24),
-            HeatMapDemo(),
+            SizedBox(
+              height: 500,
+              child: HeatMapDemo(),
+            ),
           ],
         ),
       ),

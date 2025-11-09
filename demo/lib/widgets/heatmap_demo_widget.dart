@@ -321,17 +321,24 @@ animate(
                     .build()
                     .play();
               },
-              child: KitoCanvas(
-                painter: HeatMapPainter(
-                  canvasProps,
-                  data: heatMapData.value,
-                  maxValue: maxValue.value,
-                  hoveredRow: hoveredRow.value,
-                  hoveredCol: hoveredCol.value,
+              child: SizedBox(
+                height: 300,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return KitoCanvas(
+                      painter: HeatMapPainter(
+                        canvasProps,
+                        data: heatMapData.value,
+                        maxValue: maxValue.value,
+                        hoveredRow: hoveredRow.value,
+                        hoveredCol: hoveredCol.value,
+                      ),
+                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      willChange: true,
+                      isComplex: true,
+                    );
+                  },
                 ),
-                size: const Size(double.infinity, 300),
-                willChange: true,
-                isComplex: true,
               ),
             );
             },
