@@ -712,11 +712,11 @@ class _CardStackDemo extends StatefulWidget {
 
 class _CardStackDemoState extends State<_CardStackDemo> {
   final cards = <SwipeCard>[];
-  int currentIndex = 0;
-  Offset? dragStart;
-  bool isDragging = false;
-  int likesCount = 0;
-  int passesCount = 0;
+  late final Signal<int> currentIndex;
+  late final Signal<Offset?> dragStart;
+  late final Signal<bool> isDragging;
+  late final Signal<int> likesCount;
+  late final Signal<int> passesCount;
 
   final cardColors = const [
     Color(0xFFE74C3C), // Red
@@ -745,6 +745,11 @@ class _CardStackDemoState extends State<_CardStackDemo> {
   @override
   void initState() {
     super.initState();
+    currentIndex = signal<int>(0);
+    dragStart = signal<Offset?>(null);
+    isDragging = signal<bool>(false);
+    likesCount = signal<int>(0);
+    passesCount = signal<int>(0);
     _initializeCards();
   }
 
@@ -757,65 +762,36 @@ class _CardStackDemoState extends State<_CardStackDemo> {
         color: cardColors[i],
       ));
     }
-    currentIndex = 0;
-    likesCount = 0;
-    passesCount = 0;
+    currentIndex.value = 0;
+    likesCount.value = 0;
+    passesCount.value = 0;
   }
 
   void _trigger() {
-    setState(() {
-      _initializeCards();
-    });
-
-    // Auto-demo: swipe through cards
-    _autoSwipe();
-  }
-
-  void _autoSwipe() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted || currentIndex >= cards.length) return;
-
-    // Swipe right
-    await _swipeCard(true);
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    if (!mounted || currentIndex >= cards.length) return;
-
-    // Swipe left
-    await _swipeCard(false);
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    if (!mounted || currentIndex >= cards.length) return;
-
-    // Swipe right
-    await _swipeCard(true);
+    _initializeCards();
   }
 
   void _onPanStart(DragStartDetails details) {
-    if (currentIndex >= cards.length) return;
-    setState(() {
-      dragStart = details.localPosition;
-      isDragging = true;
-    });
+    if (currentIndex.value >= cards.length) return;
+    dragStart.value = details.localPosition;
+    isDragging.value = true;
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (currentIndex >= cards.length || dragStart == null) return;
+    if (currentIndex.value >= cards.length || dragStart.value == null) return;
 
-    final card = cards[currentIndex];
-    final delta = details.localPosition - dragStart!;
+    final card = cards[currentIndex.value];
+    final delta = details.localPosition - dragStart.value!;
 
-    setState(() {
-      card.position.value = delta;
-      // Rotation based on horizontal drag (-15 to +15 degrees)
-      card.rotation.value = (delta.dx / 200).clamp(-0.26, 0.26); // ~15 degrees
-    });
+    card.position.value = delta;
+    // Rotation based on horizontal drag (-15 to +15 degrees)
+    card.rotation.value = (delta.dx / 200).clamp(-0.26, 0.26); // ~15 degrees
   }
 
   void _onPanEnd(DragEndDetails details) {
-    if (currentIndex >= cards.length) return;
+    if (currentIndex.value >= cards.length) return;
 
-    final card = cards[currentIndex];
+    final card = cards[currentIndex.value];
     final swipeThreshold = 100.0;
 
     if (card.position.value.dx.abs() > swipeThreshold) {
@@ -827,24 +803,20 @@ class _CardStackDemoState extends State<_CardStackDemo> {
       _snapBack();
     }
 
-    setState(() {
-      isDragging = false;
-      dragStart = null;
-    });
+    isDragging.value = false;
+    dragStart.value = null;
   }
 
   Future<void> _swipeCard(bool right) async {
-    if (currentIndex >= cards.length) return;
+    if (currentIndex.value >= cards.length) return;
 
-    final card = cards[currentIndex];
+    final card = cards[currentIndex.value];
 
-    setState(() {
-      if (right) {
-        likesCount++;
-      } else {
-        passesCount++;
-      }
-    });
+    if (right) {
+      likesCount.value++;
+    } else {
+      passesCount.value++;
+    }
 
     // Animate card flying off
     final targetX = right ? 400.0 : -400.0;
@@ -861,8 +833,8 @@ class _CardStackDemoState extends State<_CardStackDemo> {
     swipeAnim.play();
 
     // Scale up next card
-    if (currentIndex + 1 < cards.length) {
-      final nextCard = cards[currentIndex + 1];
+    if (currentIndex.value + 1 < cards.length) {
+      final nextCard = cards[currentIndex.value + 1];
       final scaleAnim = animate()
           .to(nextCard.scale, 1.0)
           .withDuration(300)
@@ -873,15 +845,13 @@ class _CardStackDemoState extends State<_CardStackDemo> {
 
     await Future.delayed(const Duration(milliseconds: 400));
 
-    setState(() {
-      currentIndex++;
-    });
+    currentIndex.value++;
   }
 
   void _snapBack() {
-    if (currentIndex >= cards.length) return;
+    if (currentIndex.value >= cards.length) return;
 
-    final card = cards[currentIndex];
+    final card = cards[currentIndex.value];
 
     final snapAnim = animate()
         .to(card.position, Offset.zero)
@@ -895,11 +865,11 @@ class _CardStackDemoState extends State<_CardStackDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final allSwiped = currentIndex >= cards.length;
+    final allSwiped = currentIndex.value >= cards.length;
 
     return DemoCard(
       title: 'Card Stack',
-      description: 'Tinder-style swipe cards with gesture physics (click to animate)',
+      description: 'Tinder-style swipe cards with gesture physics',
       codeSnippet: '''// Gesture-driven card swipe
 
 void _onPanUpdate(DragUpdateDetails details) {
@@ -940,14 +910,14 @@ void _onPanEnd(DragEndDetails details) {
                           children: [
                             // Future cards (dimmed)
                             for (var i = math.min(
-                                    currentIndex + 2, cards.length - 1);
-                                i > currentIndex;
+                                    currentIndex.value + 2, cards.length - 1);
+                                i > currentIndex.value;
                                 i--)
                               _buildCard(
-                                  context, cards[i], i - currentIndex, false),
+                                  context, cards[i], i - currentIndex.value, false),
                             // Current card (draggable)
-                            if (currentIndex < cards.length)
-                              _buildCard(context, cards[currentIndex], 0, true),
+                            if (currentIndex.value < cards.length)
+                              _buildCard(context, cards[currentIndex.value], 0, true),
                           ],
                         ),
                 ),
@@ -964,8 +934,8 @@ void _onPanEnd(DragEndDetails details) {
                     context,
                     Icons.close,
                     Colors.red,
-                    'Pass ($passesCount)',
-                    currentIndex < cards.length
+                    'Pass (${passesCount.value})',
+                    currentIndex.value < cards.length
                         ? () => _swipeCard(false)
                         : null,
                   ),
@@ -973,8 +943,8 @@ void _onPanEnd(DragEndDetails details) {
                     context,
                     Icons.favorite,
                     Colors.green,
-                    'Like ($likesCount)',
-                    currentIndex < cards.length ? () => _swipeCard(true) : null,
+                    'Like (${likesCount.value})',
+                    currentIndex.value < cards.length ? () => _swipeCard(true) : null,
                   ),
                 ],
               ),
