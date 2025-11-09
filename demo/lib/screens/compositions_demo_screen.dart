@@ -71,8 +71,11 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   ];
 
   List<List<GameTile?>> grid = [];
-  late final Signal<int?> selectedRow;
-  late final Signal<int?> selectedCol;
+  late final Signal<int?> draggedRow;
+  late final Signal<int?> draggedCol;
+  late final Signal<Offset> dragOffset;
+  late final Signal<int?> targetRow;
+  late final Signal<int?> targetCol;
   late final Signal<int> score;
   late final Signal<int> moves;
   late final Signal<int> movesLeft;
@@ -87,8 +90,11 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
   @override
   void initState() {
     super.initState();
-    selectedRow = signal<int?>(null);
-    selectedCol = signal<int?>(null);
+    draggedRow = signal<int?>(null);
+    draggedCol = signal<int?>(null);
+    dragOffset = signal<Offset>(Offset.zero);
+    targetRow = signal<int?>(null);
+    targetCol = signal<int?>(null);
     score = signal<int>(0);
     moves = signal<int>(0);
     movesLeft = signal<int>(20);
@@ -142,33 +148,77 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     combo.value = 0;
     isAnimating.value = false;
     gameOver.value = false;
-    selectedRow.value = null;
-    selectedCol.value = null;
+    draggedRow.value = null;
+    draggedCol.value = null;
+    dragOffset.value = Offset.zero;
+    targetRow.value = null;
+    targetCol.value = null;
     _initializeGrid();
   }
 
-  void _onTileTap(int row, int col) {
+  void _onPanStart(DragStartDetails details, int row, int col) {
     if (isAnimating.value || gameOver.value) return;
     if (grid[row][col] == null) return;
 
-    if (selectedRow.value == null && selectedCol.value == null) {
-      // First selection
-      selectedRow.value = row;
-      selectedCol.value = col;
-    } else {
-      // Second selection - check if adjacent
-      final rowDiff = (row - selectedRow.value!).abs();
-      final colDiff = (col - selectedCol.value!).abs();
+    draggedRow.value = row;
+    draggedCol.value = col;
+    dragOffset.value = Offset.zero;
+    targetRow.value = null;
+    targetCol.value = null;
+  }
 
-      if ((rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1)) {
-        // Valid adjacent swap
-        _handleSwap(selectedRow.value!, selectedCol.value!, row, col);
-      } else {
-        // Not adjacent - just change selection
-        selectedRow.value = row;
-        selectedCol.value = col;
+  void _onPanUpdate(DragUpdateDetails details, int row, int col) {
+    if (draggedRow.value == null || draggedCol.value == null) return;
+    if (draggedRow.value != row || draggedCol.value != col) return;
+
+    dragOffset.value = details.localPosition - Offset(tileSize / 2, tileSize / 2);
+
+    // Calculate which adjacent tile we're dragging toward
+    final dx = dragOffset.value.dx;
+    final dy = dragOffset.value.dy;
+    final threshold = tileSize * 0.3; // 30% of tile size to trigger swap indicator
+
+    int? newTargetRow;
+    int? newTargetCol;
+
+    if (dx.abs() > dy.abs()) {
+      // Horizontal drag
+      if (dx > threshold && col < cols - 1) {
+        newTargetRow = row;
+        newTargetCol = col + 1;
+      } else if (dx < -threshold && col > 0) {
+        newTargetRow = row;
+        newTargetCol = col - 1;
+      }
+    } else {
+      // Vertical drag
+      if (dy > threshold && row < rows - 1) {
+        newTargetRow = row + 1;
+        newTargetCol = col;
+      } else if (dy < -threshold && row > 0) {
+        newTargetRow = row - 1;
+        newTargetCol = col;
       }
     }
+
+    targetRow.value = newTargetRow;
+    targetCol.value = newTargetCol;
+  }
+
+  void _onPanEnd(DragEndDetails details, int row, int col) {
+    if (draggedRow.value == null || draggedCol.value == null) return;
+
+    // Check if we have a valid target tile
+    if (targetRow.value != null && targetCol.value != null) {
+      _handleSwap(draggedRow.value!, draggedCol.value!, targetRow.value!, targetCol.value!);
+    }
+
+    // Reset drag state
+    draggedRow.value = null;
+    draggedCol.value = null;
+    dragOffset.value = Offset.zero;
+    targetRow.value = null;
+    targetCol.value = null;
   }
 
   Future<void> _handleSwap(int row1, int col1, int row2, int col2) async {
@@ -240,8 +290,6 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     }
 
     isAnimating.value = false;
-    selectedRow.value = null;
-    selectedCol.value = null;
 
     // Check game over
     if (movesLeft.value <= 0) {
@@ -414,33 +462,36 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     return DemoCard(
       title: 'Match-3 Game (Playable!)',
       description:
-          'Interactive Candy Crush-style game - Click tiles to swap and match!',
-      codeSnippet: '''// Interactive Match-3 Game Features:
+          'Interactive Candy Crush-style game - Drag tiles to swap and match!',
+      codeSnippet: '''// Interactive Match-3 Game with Drag-to-Swap:
 
-// Tile selection with visual feedback
-void _onTileTap(int row, int col) {
-  if (selectedRow == null) {
-    selectedRow = row;
-    selectedCol = col; // First selection
+// Track drag state during pan
+void _onPanUpdate(DragUpdateDetails details) {
+  dragOffset.value = details.localPosition;
+
+  // Calculate which adjacent tile to target
+  if (dx.abs() > dy.abs()) {
+    targetCol = dx > 0 ? col + 1 : col - 1;
   } else {
-    // Check if adjacent
-    final adjacent = isAdjacent(row, col);
-    if (adjacent) {
-      await _handleSwap(); // Swap tiles
-    }
+    targetRow = dy > 0 ? row + 1 : row - 1;
   }
 }
+
+// Visual feedback during drag
+Transform.translate(
+  offset: isDragged ? dragOffset :
+          isTarget ? swapPreviewOffset : Offset.zero,
+  child: Transform.scale(
+    scale: isDragged ? 1.15 : isTarget ? 1.05 : 1.0,
+    child: tile,
+  ),
+)
 
 // Swap validation: revert if no match
 final hadMatches = await _processMatches();
 if (!hadMatches) {
-  // Animate swap back
   parallel([swapBackAnim1, swapBackAnim2]);
-}
-
-// Cascade combos + gravity physics
-await _applyGravity();
-await _spawnNewTiles();''',
+}''',
       child: ClickableDemo(
         onTrigger: _trigger,
         builder: (_) => ReactiveBuilder(
@@ -525,8 +576,8 @@ await _spawnNewTiles();''',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    _featureText(context, '• Click tiles to select'),
-                    _featureText(context, '• Swap adjacent tiles'),
+                    _featureText(context, '• Drag tiles to swap'),
+                    _featureText(context, '• Swap with adjacent tiles'),
                     _featureText(context, '• Match 3+ same colors'),
                     _featureText(context, '• Reach target score!'),
                   ],
@@ -541,36 +592,60 @@ await _spawnNewTiles();''',
   }
 
   Widget _buildTile(GameTile tile, int row, int col) {
-    final isSelected = selectedRow.value == row && selectedCol.value == col;
+    final isDragged = draggedRow.value == row && draggedCol.value == col;
+    final isTarget = targetRow.value == row && targetCol.value == col;
+
+    // Calculate position offset for dragged tile
+    Offset positionOffset = Offset.zero;
+    if (isDragged) {
+      positionOffset = dragOffset.value;
+    } else if (isTarget && draggedRow.value != null && draggedCol.value != null) {
+      // Move target tile aside to show swap preview
+      final dragRow = draggedRow.value!;
+      final dragCol = draggedCol.value!;
+
+      if (row == dragRow) {
+        // Horizontal swap - move target tile horizontally
+        positionOffset = Offset(col > dragCol ? -tileSize * 0.3 : tileSize * 0.3, 0);
+      } else {
+        // Vertical swap - move target tile vertically
+        positionOffset = Offset(0, row > dragRow ? -tileSize * 0.3 : tileSize * 0.3);
+      }
+    }
 
     return Positioned(
       left: tile.position.value.dx + gap,
       top: tile.position.value.dy + gap,
       child: GestureDetector(
-        onTap: () => _onTileTap(row, col),
-        child: Transform.scale(
-          scale: tile.scale.value * (isSelected ? 1.1 : 1.0),
-          child: Opacity(
-            opacity: tile.opacity.value,
-            child: Container(
-              width: tileSize,
-              height: tileSize,
-              decoration: BoxDecoration(
-                color: colors[tile.color],
-                borderRadius: BorderRadius.circular(4),
-                border: isSelected
-                    ? Border.all(
-                        color: Colors.white,
-                        width: 3,
-                      )
-                    : null,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isSelected ? 0.3 : 0.1),
-                    blurRadius: isSelected ? 8 : 4,
-                    offset: Offset(0, isSelected ? 4 : 2),
-                  ),
-                ],
+        onPanStart: (details) => _onPanStart(details, row, col),
+        onPanUpdate: (details) => _onPanUpdate(details, row, col),
+        onPanEnd: (details) => _onPanEnd(details, row, col),
+        child: Transform.translate(
+          offset: positionOffset,
+          child: Transform.scale(
+            scale: tile.scale.value * (isDragged ? 1.15 : isTarget ? 1.05 : 1.0),
+            child: Opacity(
+              opacity: tile.opacity.value,
+              child: Container(
+                width: tileSize,
+                height: tileSize,
+                decoration: BoxDecoration(
+                  color: colors[tile.color],
+                  borderRadius: BorderRadius.circular(4),
+                  border: isTarget
+                      ? Border.all(
+                          color: Colors.white.withOpacity(0.7),
+                          width: 2,
+                        )
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDragged ? 0.4 : isTarget ? 0.2 : 0.1),
+                      blurRadius: isDragged ? 12 : isTarget ? 6 : 4,
+                      offset: Offset(0, isDragged ? 6 : isTarget ? 3 : 2),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
