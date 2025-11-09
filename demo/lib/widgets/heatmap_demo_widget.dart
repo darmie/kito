@@ -285,9 +285,10 @@ animate(
 ''',
       child: ClickableDemo(
         onTrigger: _trigger,
-        builder: (context) => ReactiveBuilder(
-          builder: (_) {
-            return MouseRegion(
+        builder: (context) => Builder(
+          builder: (builderContext) => ReactiveBuilder(
+            builder: (_) {
+              return MouseRegion(
               onHover: (event) {
                 final size = context.size;
                 if (size != null) {
@@ -333,7 +334,8 @@ animate(
                 isComplex: true,
               ),
             );
-          },
+            },
+          ),
         ),
       ),
     );
