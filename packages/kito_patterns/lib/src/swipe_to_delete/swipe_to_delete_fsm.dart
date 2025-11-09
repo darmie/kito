@@ -248,6 +248,8 @@ class SwipeToDeleteStateMachine
         : -ctx.config.maxSwipeDistance * 2.5;
 
     ctx.currentAnimation?.dispose();
+    ctx.backgroundAnimation?.dispose();
+
     ctx.currentAnimation = animate()
         .to(ctx.swipeOffset, Offset(targetX, 0))
         .to(ctx.opacity, 0.0)
@@ -256,6 +258,14 @@ class SwipeToDeleteStateMachine
         .withEasing(Easing.easeInCubic)
         .build();
 
+    // Fade out the background indicator during deletion
+    ctx.backgroundAnimation = animate()
+        .to(ctx.backgroundOpacity, 0.0)
+        .withDuration(ctx.config.deleteDuration)
+        .withEasing(Easing.easeInCubic)
+        .build();
+
     ctx.currentAnimation!.play();
+    ctx.backgroundAnimation!.play();
   }
 }
