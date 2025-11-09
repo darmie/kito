@@ -157,8 +157,9 @@ class _PullToRefreshDemoState extends State<_PullToRefreshDemo> {
 fsm.dispatch(PullToRefreshEvent.startPull);
 fsm.dispatch(PullToRefreshEvent.updatePull);
 fsm.dispatch(PullToRefreshEvent.release);''',
-      child: ReactiveBuilder(
-        builder: (_) => GestureDetector(
+      child: Builder(
+        builder: (context) => ReactiveBuilder(
+          builder: (_) => GestureDetector(
           onVerticalDragUpdate: _onVerticalDragUpdate,
           onVerticalDragEnd: _onVerticalDragEnd,
           child: Container(
@@ -259,6 +260,7 @@ fsm.dispatch(PullToRefreshEvent.release);''',
               ],
             ),
           ),
+          ),
         ),
       ),
     );
@@ -317,10 +319,11 @@ controller.initializeItems(['Item 1', 'Item 2', ...]);
 controller.startDrag(visualIndex);
 controller.updateTargetPosition(newTargetIndex);
 controller.drop();''',
-      child: ReactiveBuilder(
-        builder: (_) {
-          // Access frameCounter to trigger rebuild on animation frames
-          controller.frameCounter;
+      child: Builder(
+        builder: (context) => ReactiveBuilder(
+          builder: (_) {
+            // Access frameCounter to trigger rebuild on animation frames
+            controller.frameCounter;
 
           // Calculate dynamic height: (items * itemHeight) + padding
           final numItems = controller.currentOrder.length;
@@ -441,7 +444,8 @@ controller.drop();''',
               ],
             ),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -577,10 +581,11 @@ controller.initializeItems([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 controller.startDrag(visualIndex);
 controller.updateTargetPosition(newTargetIndex);
 controller.drop();''',
-      child: ReactiveBuilder(
-        builder: (_) {
-          // Access frameCounter to trigger rebuild on animation frames
-          controller.frameCounter;
+      child: Builder(
+        builder: (context) => ReactiveBuilder(
+          builder: (_) {
+            // Access frameCounter to trigger rebuild on animation frames
+            controller.frameCounter;
 
           final gridWidth = columns * (itemSize + gap);
           final gridHeight = columns * (itemSize + gap);
@@ -694,7 +699,8 @@ controller.drop();''',
               ],
             ),
           );
-        },
+          },
+        ),
       ),
     );
   }
@@ -743,10 +749,11 @@ controller.drop();''',
   }
 
   Widget _modeChip(BuildContext context, GridRepositionMode mode, String label) {
-    return ReactiveBuilder(
-      builder: (_) {
-        final isSelected = currentMode.value == mode;
-        return GestureDetector(
+    return Builder(
+      builder: (context) => ReactiveBuilder(
+        builder: (_) {
+          final isSelected = currentMode.value == mode;
+          return GestureDetector(
           onTap: () => currentMode.value = mode,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -771,7 +778,8 @@ controller.drop();''',
             ),
           ),
         );
-      },
+        },
+      ),
     );
   }
 }

@@ -145,8 +145,8 @@ onHorizontalDragEnd: (_) =>
 ''',
       child: ClickableDemo(
         onTrigger: _trigger,
-        builder: (_) => ReactiveBuilder(
-          builder: (context) {
+        builder: (context) => ReactiveBuilder(
+          builder: (_) {
             return _buildList(context);
           },
         ),
@@ -223,8 +223,10 @@ onHorizontalDragEnd: (_) =>
       sizeFactor: animation,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: ReactiveBuilder(
-          builder: (context) => _buildItemContent(item, machine),
+        child: Builder(
+          builder: (context) => ReactiveBuilder(
+            builder: (_) => _buildItemContent(item, machine),
+          ),
         ),
       ),
     );
@@ -240,8 +242,10 @@ onHorizontalDragEnd: (_) =>
       sizeFactor: animation,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: ReactiveBuilder(
-          builder: (context) => _buildItemContent(item, machine),
+        child: Builder(
+          builder: (context) => ReactiveBuilder(
+            builder: (_) => _buildItemContent(item, machine),
+          ),
         ),
       ),
     );

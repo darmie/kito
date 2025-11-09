@@ -958,8 +958,8 @@ void _onPanEnd(DragEndDetails details) {
 }''',
       child: ClickableDemo(
         onTrigger: _trigger,
-        builder: (_) => ReactiveBuilder(
-        builder: (__) => Column(
+        builder: (context) => ReactiveBuilder(
+        builder: (_) => Column(
           children: [
             // Card stack
             Expanded(
@@ -1333,8 +1333,8 @@ parallel([expandAnim, ...fadeAnims]);
 ''',
       child: ClickableDemo(
         onTrigger: _trigger,
-        builder: (_) => ReactiveBuilder(
-        builder: (context) {
+        builder: (context) => ReactiveBuilder(
+        builder: (_) {
           return _buildGallery(context);
         },
         ),

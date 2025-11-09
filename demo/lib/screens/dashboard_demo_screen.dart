@@ -455,66 +455,67 @@ ReactiveBuilder(
     '\\\$\${totalRevenue.value.toStringAsFixed(0)}'
   ),
 );''',
-      child: ReactiveBuilder(
-        builder: (_) {
-          final dataRegion = parallelFsm.getRegion('data');
-          final animRegion = parallelFsm.getRegion('animation');
-          final dataState = dataRegion?.currentState.value;
-          final animState = animRegion?.currentState.value;
+      child: Builder(
+        builder: (context) => ReactiveBuilder(
+          builder: (_) {
+            final dataRegion = parallelFsm.getRegion('data');
+            final animRegion = parallelFsm.getRegion('animation');
+            final dataState = dataRegion?.currentState.value;
+            final animState = animRegion?.currentState.value;
 
-          final isLoading = dataState == DashboardDataState.loading ||
-              dataState == DashboardDataState.refreshing;
-          final hasData = dataState == DashboardDataState.loaded;
+            final isLoading = dataState == DashboardDataState.loading ||
+                dataState == DashboardDataState.refreshing;
+            final hasData = dataState == DashboardDataState.loaded;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header with refresh button
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Business Metrics',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getStateDescription(dataState, animState),
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.6),
-                              ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      onPressed: isLoading ? null : _refresh,
-                      icon: Icon(
-                        Icons.refresh,
-                        color: isLoading
-                            ? Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.3)
-                            : Theme.of(context).colorScheme.primary,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with refresh button
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Business Metrics',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _getStateDescription(dataState, animState),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
+                                ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      IconButton(
+                        onPressed: isLoading ? null : _refresh,
+                        icon: Icon(
+                          Icons.refresh,
+                          color: isLoading
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.3)
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
               // Summary cards
               if (hasData)
@@ -633,6 +634,7 @@ ReactiveBuilder(
             ],
           );
         },
+        ),
       ),
     );
   }
