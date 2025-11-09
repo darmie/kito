@@ -521,10 +521,11 @@ final hadMatches = await _processMatches();
 if (!hadMatches) {
   parallel([swapBackAnim1, swapBackAnim2]);
 }''',
-      child: ReactiveBuilder(
-        builder: (context) => Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+      child: Builder(
+        builder: (context) => ReactiveBuilder(
+          builder: (_) => Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
             children: [
               // Game board
               Container(
@@ -626,6 +627,7 @@ if (!hadMatches) {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
