@@ -1,3 +1,4 @@
+![Kito Logo](kito-logo.png)
 # Kito 🎬
 
 **Declarative state machines & reactive animations for Dart/Flutter**

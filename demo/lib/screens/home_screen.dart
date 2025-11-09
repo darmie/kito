@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Kito Animation System',
+                    'Kito Interaction Framework',
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
