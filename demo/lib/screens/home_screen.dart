@@ -3,6 +3,7 @@ import 'primitives_demo_screen.dart';
 import 'patterns_demo_screen.dart';
 import 'interactive_demo_screen.dart';
 import 'compositions_demo_screen.dart';
+import 'dashboard_demo_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -106,6 +107,18 @@ class HomeScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const CompositionsDemoScreen(),
+                          ),
+                        ),
+                      ),
+                      _DemoCard(
+                        title: 'Advanced Dashboard',
+                        description: 'Parallel FSM, Canvas, Timeline & Signals',
+                        icon: Icons.analytics,
+                        color: const Color(0xFF2C3E50), // Dark blue-gray
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DashboardDemoScreen(),
                           ),
                         ),
                       ),
