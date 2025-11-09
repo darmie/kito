@@ -94,8 +94,8 @@ class DragItemContext {
   /// Configuration
   final DragShuffleConfig config;
 
-  /// Item index
-  final int index;
+  /// Item index (mutable for reordering)
+  int index;
 
   /// Target position (when being displaced)
   int targetIndex;
@@ -125,11 +125,21 @@ class DragItemContext {
   }) : targetIndex = index;
 }
 
-/// Controller for managing drag-and-shuffle list
-class DragShuffleController {
+
+
+/// Controller for managing drag-and-shuffle list with reactive state
+class DragShuffleController<T> {
   final DragShuffleConfig config;
-  final List<DragItemContext> items = [];
-  final void Function(int oldIndex, int newIndex)? onReorder;
+  final void Function(List<T> newOrder)? onReorder;
+
+  /// Current order of items (reactive signal)
+  late final Signal<List<T>> _currentOrder;
+
+  /// Animation contexts keyed by item (stable reference)
+  final Map<T, DragItemContext> _itemContexts = {};
+
+  /// Reactive signal that increments on every animation frame
+  late final Signal<int> _frameCounter;
 
   int? _draggingIndex;
   int? _targetIndex;
@@ -137,38 +147,60 @@ class DragShuffleController {
   DragShuffleController({
     this.config = const DragShuffleConfig(),
     this.onReorder,
-  });
+  }) {
+    _currentOrder = signal<List<T>>([]);
+    _frameCounter = signal(0);
+  }
 
-  /// Initialize items
-  void initializeItems(int count) {
-    items.clear();
-    for (var i = 0; i < count; i++) {
-      items.add(DragItemContext(
+  /// Get current order of items (reactive)
+  List<T> get currentOrder => _currentOrder.value;
+
+  /// Get frame counter for triggering reactive rebuilds
+  int get frameCounter => _frameCounter.value;
+
+  /// Initialize items with a list
+  void initializeItems(List<T> items) {
+    _currentOrder.value = List.from(items);
+    _itemContexts.clear();
+
+    // Create animation context for each item, keyed by the item itself
+    for (var i = 0; i < items.length; i++) {
+      _itemContexts[items[i]] = DragItemContext(
         config: config,
         index: i,
-      ));
+      );
     }
   }
 
-  /// Get item context
-  DragItemContext getItem(int index) => items[index];
+  /// Get item at visual position
+  T getItemAt(int visualIndex) => _currentOrder.value[visualIndex];
 
-  /// Start dragging an item
-  void startDrag(int index) {
-    _draggingIndex = index;
-    _targetIndex = index;
+  /// Get animation context for an item
+  DragItemContext getContext(T item) => _itemContexts[item]!;
 
-    final item = items[index];
-    _animateDragStart(item);
+  /// Get animation context at visual position
+  DragItemContext getContextAt(int visualIndex) =>
+      _itemContexts[_currentOrder.value[visualIndex]]!;
+
+  /// Start dragging an item at visual position
+  void startDrag(int visualIndex) {
+    _draggingIndex = visualIndex;
+    _targetIndex = visualIndex;
+
+    final item = _currentOrder.value[visualIndex];
+    final ctx = _itemContexts[item]!;
+    _animateDragStart(ctx);
   }
 
-  /// Update drag position
-  void updateDragPosition(int index, double offsetX, double offsetY) {
+  /// Update drag position (optional - for custom drag handling)
+  void updateDragPosition(int visualIndex, double offsetX, double offsetY) {
     if (_draggingIndex == null) return;
 
-    final item = items[index];
-    item.offsetX.value = offsetX;
-    item.offsetY.value = offsetY;
+    final item = _currentOrder.value[visualIndex];
+    final ctx = _itemContexts[item]!;
+    ctx.offsetX.value = offsetX;
+    ctx.offsetY.value = offsetY;
+    _frameCounter.value++; // Trigger reactive rebuild
   }
 
   /// Update target drop position
@@ -182,19 +214,33 @@ class DragShuffleController {
     _animateDisplacement(oldTarget, newTargetIndex);
   }
 
-  /// Drop the item
+  /// Drop the item - handles reordering internally
   void drop() {
     if (_draggingIndex == null || _targetIndex == null) return;
 
     final dragIndex = _draggingIndex!;
     final dropIndex = _targetIndex!;
 
-    _animateDrop(items[dragIndex], dropIndex);
-
-    // Notify reorder callback
     if (dragIndex != dropIndex) {
-      onReorder?.call(dragIndex, dropIndex);
+      // REORDER INTERNALLY
+      final newOrder = List<T>.from(_currentOrder.value);
+      final item = newOrder.removeAt(dragIndex);
+      newOrder.insert(dropIndex, item);
+      _currentOrder.value = newOrder;
+
+      // Update all context indices to match new positions
+      for (var i = 0; i < newOrder.length; i++) {
+        _itemContexts[newOrder[i]]!.index = i;
+        _itemContexts[newOrder[i]]!.targetIndex = i;
+      }
+
+      // Notify parent of new order
+      onReorder?.call(List.unmodifiable(newOrder));
     }
+
+    final item = _currentOrder.value[dropIndex];
+    final ctx = _itemContexts[item]!;
+    _animateDrop(ctx, dropIndex);
 
     _draggingIndex = null;
     _targetIndex = null;
@@ -204,8 +250,9 @@ class DragShuffleController {
   void cancelDrag() {
     if (_draggingIndex == null) return;
 
-    final item = items[_draggingIndex!];
-    _animateCancel(item);
+    final item = _currentOrder.value[_draggingIndex!];
+    final ctx = _itemContexts[item]!;
+    _animateCancel(ctx);
 
     _draggingIndex = null;
     _targetIndex = null;
@@ -213,15 +260,16 @@ class DragShuffleController {
 
   // Animation helpers
 
-  void _animateDragStart(DragItemContext item) {
-    item.currentAnimation?.dispose();
-    item.currentAnimation = animate()
-        .to(item.scale, config.dragScale)
-        .to(item.opacity, config.dragOpacity)
-        .to(item.rotation, config.dragRotation)
-        .to(item.elevation, config.dragElevation)
+  void _animateDragStart(DragItemContext ctx) {
+    ctx.currentAnimation?.dispose();
+    ctx.currentAnimation = animate()
+        .to(ctx.scale, config.dragScale)
+        .to(ctx.opacity, config.dragOpacity)
+        .to(ctx.rotation, config.dragRotation)
+        .to(ctx.elevation, config.dragElevation)
         .withDuration(200)
         .withEasing(Easing.easeOutSine)
+        .onUpdate((t) => _frameCounter.value++) // Trigger rebuild on each frame
         .build()
       ..play();
   }
@@ -234,15 +282,17 @@ class DragShuffleController {
     for (var i = start; i <= end; i++) {
       if (i == _draggingIndex) continue;
 
-      final item = items[i];
+      final item = _currentOrder.value[i];
+      final ctx = _itemContexts[item]!;
       final displacement = _calculateDisplacement(i, newTarget);
 
-      item.currentAnimation?.dispose();
-      item.currentAnimation = animate()
-          .to(item.offsetY, displacement)
-          .to(item.scale, displacement != 0 ? config.displaceScale : 1.0)
+      ctx.currentAnimation?.dispose();
+      ctx.currentAnimation = animate()
+          .to(ctx.offsetY, displacement)
+          .to(ctx.scale, displacement != 0 ? config.displaceScale : 1.0)
           .withDuration(config.repositionDuration)
           .withEasing(config.repositionEasing)
+          .onUpdate((t) => _frameCounter.value++) // Trigger rebuild on each frame
           .build()
         ..play();
     }
@@ -271,59 +321,61 @@ class DragShuffleController {
     return 0.0;
   }
 
-  void _animateDrop(DragItemContext item, int dropIndex) {
-    final targetY = _calculateDisplacement(item.index, dropIndex);
-
-    item.currentAnimation?.dispose();
-    item.currentAnimation = animate()
-        .to(item.offsetX, 0.0)
-        .to(item.offsetY, targetY)
-        .to(item.scale, 1.0)
-        .to(item.opacity, 1.0)
-        .to(item.rotation, 0.0)
-        .to(item.elevation, 0.0)
+  void _animateDrop(DragItemContext ctx, int dropIndex) {
+    ctx.currentAnimation?.dispose();
+    ctx.currentAnimation = animate()
+        .to(ctx.offsetX, 0.0)
+        .to(ctx.offsetY, 0.0)
+        .to(ctx.scale, 1.0)
+        .to(ctx.opacity, 1.0)
+        .to(ctx.rotation, 0.0)
+        .to(ctx.elevation, 0.0)
         .withDuration(config.dropDuration)
         .withEasing(config.dropEasing)
+        .onUpdate((t) => _frameCounter.value++) // Trigger rebuild on each frame
         .build()
       ..play();
 
     // Reset other items after drop
     Future.delayed(Duration(milliseconds: config.dropDuration), () {
-      for (var i = 0; i < items.length; i++) {
-        final otherItem = items[i];
-        if (i != item.index) {
-          otherItem.offsetX.value = 0.0;
-          otherItem.offsetY.value = 0.0;
-          otherItem.scale.value = 1.0;
+      for (final item in _currentOrder.value) {
+        final otherCtx = _itemContexts[item]!;
+        if (otherCtx != ctx) {
+          otherCtx.offsetX.value = 0.0;
+          otherCtx.offsetY.value = 0.0;
+          otherCtx.scale.value = 1.0;
         }
       }
+      _frameCounter.value++; // Final rebuild
     });
   }
 
-  void _animateCancel(DragItemContext item) {
-    item.currentAnimation?.dispose();
-    item.currentAnimation = animate()
-        .to(item.offsetX, 0.0)
-        .to(item.offsetY, 0.0)
-        .to(item.scale, 1.0)
-        .to(item.opacity, 1.0)
-        .to(item.rotation, 0.0)
-        .to(item.elevation, 0.0)
+  void _animateCancel(DragItemContext ctx) {
+    ctx.currentAnimation?.dispose();
+    ctx.currentAnimation = animate()
+        .to(ctx.offsetX, 0.0)
+        .to(ctx.offsetY, 0.0)
+        .to(ctx.scale, 1.0)
+        .to(ctx.opacity, 1.0)
+        .to(ctx.rotation, 0.0)
+        .to(ctx.elevation, 0.0)
         .withDuration(250)
         .withEasing(Easing.easeOutCubic)
+        .onUpdate((t) => _frameCounter.value++)
         .build()
       ..play();
 
     // Reset displaced items
-    for (var i = 0; i < items.length; i++) {
-      final otherItem = items[i];
-      if (i != item.index) {
-        otherItem.currentAnimation?.dispose();
-        otherItem.currentAnimation = animate()
-            .to(otherItem.offsetY, 0.0)
-            .to(otherItem.scale, 1.0)
+    for (final item in _currentOrder.value) {
+      final otherCtx = _itemContexts[item]!;
+      if (otherCtx != ctx) {
+        otherCtx.currentAnimation?.dispose();
+        otherCtx.currentAnimation = animate()
+            .to(otherCtx.offsetY, 0.0)
+            .to(otherCtx.scale, 1.0)
             .withDuration(250)
             .withEasing(Easing.easeOutCubic)
+            .onUpdate((t) => _frameCounter.value++)
             .build()
           ..play();
       }
@@ -332,8 +384,8 @@ class DragShuffleController {
 
   /// Dispose all animations
   void dispose() {
-    for (final item in items) {
-      item.currentAnimation?.dispose();
+    for (final ctx in _itemContexts.values) {
+      ctx.currentAnimation?.dispose();
     }
   }
 }

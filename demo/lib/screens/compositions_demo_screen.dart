@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Easing;
 import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
 import '../widgets/demo_card.dart';
+import '../widgets/clickable_demo.dart';
 
 class CompositionsDemoScreen extends StatelessWidget {
   const CompositionsDemoScreen({super.key});
@@ -456,8 +457,7 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     return DemoCard(
       title: 'Match-3 Game (Playable!)',
       description:
-          'Interactive Candy Crush-style game - Click tiles to swap and match!',
-      onTrigger: _trigger,
+          'Interactive Candy Crush-style game - Click tiles to swap and match! (click to animate)',
       codeSnippet: '''// Interactive Match-3 Game Features:
 
 // Tile selection with visual feedback
@@ -484,8 +484,10 @@ if (!hadMatches) {
 // Cascade combos + gravity physics
 await _applyGravity();
 await _spawnNewTiles();''',
-      child: ReactiveBuilder(
-        builder: (_) => Container(
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => ReactiveBuilder(
+        builder: (__) => Container(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -604,6 +606,7 @@ await _spawnNewTiles();''',
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -896,8 +899,7 @@ class _CardStackDemoState extends State<_CardStackDemo> {
 
     return DemoCard(
       title: 'Card Stack',
-      description: 'Tinder-style swipe cards with gesture physics',
-      onTrigger: _trigger,
+      description: 'Tinder-style swipe cards with gesture physics (click to animate)',
       codeSnippet: '''// Gesture-driven card swipe
 
 void _onPanUpdate(DragUpdateDetails details) {
@@ -921,8 +923,10 @@ void _onPanEnd(DragEndDetails details) {
            target: Offset.zero).play();
   }
 }''',
-      child: ReactiveBuilder(
-        builder: (_) => Column(
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => ReactiveBuilder(
+        builder: (__) => Column(
           children: [
             // Card stack
             Expanded(
@@ -976,6 +980,7 @@ void _onPanEnd(DragEndDetails details) {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -1275,8 +1280,7 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Photo Gallery',
-      description: 'Shared element transitions',
-      onTrigger: _trigger,
+      description: 'Shared element transitions (click to animate)',
       codeSnippet: '''
 // Expand photo with hero animation
 final expandAnim = animate()
@@ -1296,10 +1300,13 @@ final fadeAnims = otherPhotos
 
 parallel([expandAnim, ...fadeAnims]);
 ''',
-      child: ReactiveBuilder(
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => ReactiveBuilder(
         builder: (context) {
           return _buildGallery(context);
         },
+        ),
       ),
     );
   }
@@ -1620,8 +1627,7 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Onboarding Flow',
-      description: 'Multi-step page transitions',
-      onTrigger: _trigger,
+      description: 'Multi-step page transitions (click to animate)',
       codeSnippet: '''
 // Slide out current page
 final slideOut = animate()
@@ -1642,10 +1648,13 @@ final slideIn = animate()
 
 sequential([slideOut, slideIn]);
 ''',
-      child: ReactiveBuilder(
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => ReactiveBuilder(
         builder: (context) {
           return _buildOnboarding(context);
         },
+        ),
       ),
     );
   }

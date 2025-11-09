@@ -3,21 +3,22 @@ import 'package:kito/kito.dart';
 import 'package:kito_patterns/kito_patterns.dart';
 import '../widgets/demo_scaffold.dart';
 import '../widgets/demo_card.dart';
+import '../widgets/clickable_demo.dart';
 
 class PrimitivesDemoScreen extends StatelessWidget {
   const PrimitivesDemoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
+    return const DemoScaffold(
       title: 'Atomic Primitives',
       subtitle: 'Pure, composable animation building blocks',
-      tabs: const [
+      tabs: [
         Tab(text: 'Motion'),
         Tab(text: 'Enter/Exit'),
         Tab(text: 'Timing'),
       ],
-      tabViews: const [
+      tabViews: [
         _MotionPrimitivesTab(),
         _EnterExitPrimitivesTab(),
         _TimingPrimitivesTab(),
@@ -79,8 +80,7 @@ class _ElasticDemoState extends State<_ElasticDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Elastic',
-      description: 'Rubber band oscillation',
-      onTrigger: _trigger,
+      description: 'Rubber band oscillation (click to animate)',
       codeSnippet: '''
 final scale = animatableDouble(1.0);
 final anim = createElastic(
@@ -88,16 +88,19 @@ final anim = createElastic(
   config: ElasticConfig.strong,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.scale(
-            scale: scale.value,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1),
-                borderRadius: BorderRadius.circular(16),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             ),
           ),
@@ -135,8 +138,7 @@ class _BounceDemoState extends State<_BounceDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Bounce',
-      description: 'Decreasing amplitude bounces',
-      onTrigger: _trigger,
+      description: 'Decreasing amplitude bounces (click to animate)',
       codeSnippet: '''
 final offsetY = animatableDouble(0.0);
 final anim = createBounce(
@@ -144,16 +146,19 @@ final anim = createBounce(
   config: BounceConfig.playful,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.translate(
-            offset: Offset(0, offsetY.value),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEC4899),
-                shape: BoxShape.circle,
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.translate(
+              offset: Offset(0, offsetY.value),
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEC4899),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
@@ -191,8 +196,7 @@ class _ShakeDemoState extends State<_ShakeDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Shake',
-      description: 'Error indication wiggle',
-      onTrigger: _trigger,
+      description: 'Error indication wiggle (click to animate)',
       codeSnippet: '''
 final offsetX = animatableDouble(0.0);
 final anim = createShake(
@@ -200,19 +204,23 @@ final anim = createShake(
   config: ShakeConfig.strong,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.translate(
-            offset: Offset(offsetX.value, 0),
-            child: Container(
-              width: 120,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF43F5E),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Icon(Icons.error_outline, color: Colors.white, size: 32),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.translate(
+              offset: Offset(offsetX.value, 0),
+              child: Container(
+                width: 120,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF43F5E),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child:
+                      Icon(Icons.error_outline, color: Colors.white, size: 32),
+                ),
               ),
             ),
           ),
@@ -250,8 +258,7 @@ class _PulseDemoState extends State<_PulseDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Pulse',
-      description: 'Rhythmic scaling',
-      onTrigger: _trigger,
+      description: 'Rhythmic scaling (click to animate)',
       codeSnippet: '''
 final scale = animatableDouble(1.0);
 final anim = createPulse(
@@ -259,16 +266,19 @@ final anim = createPulse(
   config: PulseConfig.strong,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.scale(
-            scale: scale.value,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: Color(0xFF10B981),
-                shape: BoxShape.circle,
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10B981),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
@@ -306,8 +316,7 @@ class _FlashDemoState extends State<_FlashDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Flash',
-      description: 'Opacity flashing',
-      onTrigger: _trigger,
+      description: 'Opacity flashing (click to animate)',
       codeSnippet: '''
 final opacity = animatableDouble(1.0);
 final anim = createFlash(
@@ -315,18 +324,22 @@ final anim = createFlash(
   config: FlashConfig.quick,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B),
-                borderRadius: BorderRadius.circular(16),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.notifications,
+                    color: Colors.white, size: 40),
               ),
-              child: const Icon(Icons.notifications, color: Colors.white, size: 40),
             ),
           ),
         ),
@@ -363,8 +376,7 @@ class _SwingDemoState extends State<_SwingDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Swing',
-      description: 'Pendulum rotation',
-      onTrigger: _trigger,
+      description: 'Pendulum rotation (click to animate)',
       codeSnippet: '''
 final rotation = animatableDouble(0.0);
 final anim = createSwing(
@@ -372,16 +384,19 @@ final anim = createSwing(
   config: SwingConfig.strong,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.rotate(
-            angle: rotation.value * (3.14159 / 180),
-            child: Container(
-              width: 60,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6),
-                borderRadius: BorderRadius.circular(30),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.rotate(
+              angle: rotation.value * (3.14159 / 180),
+              child: Container(
+                width: 60,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6),
+                  borderRadius: BorderRadius.circular(30),
+                ),
               ),
             ),
           ),
@@ -426,8 +441,7 @@ class _JelloDemoState extends State<_JelloDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Jello',
-      description: 'Gelatinous wobble',
-      onTrigger: _trigger,
+      description: 'Gelatinous wobble (click to animate)',
       codeSnippet: '''
 final scaleX = animatableDouble(1.0);
 final anim = createJello(
@@ -435,18 +449,20 @@ final anim = createJello(
   config: JelloConfig.strong,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform(
-            transform: Matrix4.identity()
-              ..scale(scaleX.value, scaleY.value),
-            alignment: Alignment.center,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF14B8A6),
-                borderRadius: BorderRadius.circular(16),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform(
+              transform: Matrix4.identity()..scale(scaleX.value, scaleY.value),
+              alignment: Alignment.center,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14B8A6),
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             ),
           ),
@@ -470,7 +486,8 @@ class _HeartbeatDemoState extends State<_HeartbeatDemo> {
   void _trigger() {
     _animation?.dispose();
     scale.value = 1.0;
-    _animation = createHeartbeat(scale, config: const HeartbeatConfig(beats: 2));
+    _animation =
+        createHeartbeat(scale, config: const HeartbeatConfig(beats: 2));
     _animation!.play();
   }
 
@@ -484,8 +501,7 @@ class _HeartbeatDemoState extends State<_HeartbeatDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Heartbeat',
-      description: 'Double-pulse effect',
-      onTrigger: _trigger,
+      description: 'Double-pulse effect (click to animate)',
       codeSnippet: '''
 final scale = animatableDouble(1.0);
 final anim = createHeartbeat(
@@ -493,14 +509,17 @@ final anim = createHeartbeat(
   config: HeartbeatConfig.fast,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.scale(
-            scale: scale.value,
-            child: const Icon(
-              Icons.favorite,
-              color: Color(0xFFF43F5E),
-              size: 80,
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.scale(
+              scale: scale.value,
+              child: const Icon(
+                Icons.favorite,
+                color: Color(0xFFF43F5E),
+                size: 80,
+              ),
             ),
           ),
         ),
@@ -562,8 +581,7 @@ class _FadeInDemoState extends State<_FadeInDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Fade In',
-      description: 'Simple opacity transition',
-      onTrigger: _trigger,
+      description: 'Simple opacity transition (click to animate)',
       codeSnippet: '''
 final opacity = animatableDouble(0.0);
 final anim = fadeIn(
@@ -571,19 +589,22 @@ final anim = fadeIn(
   config: FadeConfig.quick,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B4513),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: const Center(
-                child: Icon(Icons.check, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B4513),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.check, color: Colors.white, size: 48),
+                ),
               ),
             ),
           ),
@@ -621,8 +642,7 @@ class _SlideInDemoState extends State<_SlideInDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Slide In',
-      description: 'Slide from bottom',
-      onTrigger: _trigger,
+      description: 'Slide from bottom (click to animate)',
       codeSnippet: '''
 final offsetY = animatableDouble(0.0);
 final anim = slideInFromBottom(
@@ -630,19 +650,23 @@ final anim = slideInFromBottom(
   config: SlideConfig.smooth,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.translate(
-            offset: Offset(0, offsetY.value),
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD2691E),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: const Center(
-                child: Icon(Icons.arrow_upward, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.translate(
+              offset: Offset(0, offsetY.value),
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD2691E),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child:
+                      Icon(Icons.arrow_upward, color: Colors.white, size: 48),
+                ),
               ),
             ),
           ),
@@ -680,8 +704,7 @@ class _ScaleInDemoState extends State<_ScaleInDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Scale In',
-      description: 'Grow with elastic easing',
-      onTrigger: _trigger,
+      description: 'Grow with elastic easing (click to animate)',
       codeSnippet: '''
 final scale = animatableDouble(0.0);
 final anim = scaleIn(
@@ -689,19 +712,22 @@ final anim = scaleIn(
   config: ScaleConfig.elastic,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.scale(
-            scale: scale.value,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6B6B6B),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: const Center(
-                child: Icon(Icons.add, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6B6B6B),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.white, size: 48),
+                ),
               ),
             ),
           ),
@@ -741,28 +767,30 @@ class _ZoomInDemoState extends State<_ZoomInDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Zoom In',
-      description: 'Scale + fade with bounce',
-      onTrigger: _trigger,
+      description: 'Scale + fade with bounce (click to animate)',
       codeSnippet: '''
 final scale = animatableDouble(0.0);
 final opacity = animatableDouble(0.0);
 final anim = zoomIn(scale, opacity);
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Transform.scale(
-              scale: scale.value,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4A4A4A),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(Icons.zoom_in, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Transform.scale(
+                scale: scale.value,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF4A4A4A),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.zoom_in, color: Colors.white, size: 48),
+                  ),
                 ),
               ),
             ),
@@ -803,31 +831,33 @@ class _FlipInDemoState extends State<_FlipInDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Flip In',
-      description: '3D-like rotation',
-      onTrigger: _trigger,
+      description: '3D-like rotation (click to animate)',
       codeSnippet: '''
 final rotation = animatableDouble(0.0);
 final opacity = animatableDouble(0.0);
 final anim = flipIn(rotation, opacity);
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Transform(
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001)
-                ..rotateY(rotation.value * (3.14159 / 180)),
-              alignment: Alignment.center,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B4513),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: const Center(
-                  child: Icon(Icons.flip, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateY(rotation.value * (3.14159 / 180)),
+                alignment: Alignment.center,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B4513),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.flip, color: Colors.white, size: 48),
+                  ),
                 ),
               ),
             ),
@@ -866,8 +896,7 @@ class _RotateInDemoState extends State<_RotateInDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Rotate In',
-      description: 'Clockwise rotation',
-      onTrigger: _trigger,
+      description: 'Clockwise rotation (click to animate)',
       codeSnippet: '''
 final rotation = animatableDouble(0.0);
 final anim = rotateIn(
@@ -875,19 +904,23 @@ final anim = rotateIn(
   fromDegrees: 180.0,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.rotate(
-            angle: rotation.value * (3.14159 / 180),
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD2691E),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: const Center(
-                child: Icon(Icons.rotate_right, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.rotate(
+              angle: rotation.value * (3.14159 / 180),
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD2691E),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child:
+                      Icon(Icons.rotate_right, color: Colors.white, size: 48),
+                ),
               ),
             ),
           ),
@@ -927,8 +960,7 @@ class _SlideFadeDemoState extends State<_SlideFadeDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Slide + Fade',
-      description: 'Combined slide and fade',
-      onTrigger: _trigger,
+      description: 'Combined slide and fade (click to animate)',
       codeSnippet: '''
 final opacity = animatableDouble(0.0);
 final offsetX = animatableDouble(0.0);
@@ -936,21 +968,25 @@ final anim = slideFadeIn(
   opacity, offsetX, 50.0,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Transform.translate(
-              offset: Offset(offsetX.value, 0),
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6B6B6B),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: const Center(
-                  child: Icon(Icons.arrow_forward, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Transform.translate(
+                offset: Offset(offsetX.value, 0),
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6B6B6B),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.arrow_forward,
+                        color: Colors.white, size: 48),
+                  ),
                 ),
               ),
             ),
@@ -991,8 +1027,7 @@ class _FadeScaleDemoState extends State<_FadeScaleDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Fade + Scale',
-      description: 'Combined fade and scale',
-      onTrigger: _trigger,
+      description: 'Combined fade and scale (click to animate)',
       codeSnippet: '''
 final opacity = animatableDouble(0.0);
 final scale = animatableDouble(0.0);
@@ -1000,21 +1035,24 @@ final anim = fadeScaleIn(
   opacity, scale,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Transform.scale(
-              scale: scale.value,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A4A4A),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: const Center(
-                  child: Icon(Icons.star, color: Colors.white, size: 48),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Transform.scale(
+                scale: scale.value,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4A4A4A),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.star, color: Colors.white, size: 48),
+                  ),
                 ),
               ),
             ),
@@ -1065,9 +1103,13 @@ class _ChainDemoState extends State<_ChainDemo> {
     rotation.value = 0.0;
     opacity.value = 1.0;
 
-    final anim1 = scaleIn(scale, config: const ScaleConfig(fromScale: 1.0, toScale: 1.5, duration: 300));
-    final anim2 = rotateIn(rotation, fromDegrees: 360.0, config: const RotateConfig(duration: 400));
-    final anim3 = fadeOut(opacity, config: const FadeConfig(fromOpacity: 1.0, toOpacity: 0.0, duration: 300));
+    final anim1 = scaleIn(scale,
+        config: const ScaleConfig(fromScale: 1.0, toScale: 1.5, duration: 300));
+    final anim2 = rotateIn(rotation,
+        fromDegrees: 360.0, config: const RotateConfig(duration: 400));
+    final anim3 = fadeOut(opacity,
+        config:
+            const FadeConfig(fromOpacity: 1.0, toOpacity: 0.0, duration: 300));
 
     chain([anim1, anim2, anim3], gap: 100);
   }
@@ -1076,8 +1118,7 @@ class _ChainDemoState extends State<_ChainDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Chain',
-      description: 'Sequential animations',
-      onTrigger: _trigger,
+      description: 'Sequential animations (click to animate)',
       codeSnippet: '''
 final anim1 = scaleIn(scale);
 final anim2 = rotateIn(rotation);
@@ -1086,23 +1127,26 @@ final anim3 = fadeOut(opacity);
 chain([anim1, anim2, anim3],
   gap: 100,
 );''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Transform.scale(
-              scale: scale.value,
-              child: Transform.rotate(
-                angle: rotation.value * (3.14159 / 180),
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B4513),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.link, color: Colors.white, size: 40),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Transform.scale(
+                scale: scale.value,
+                child: Transform.rotate(
+                  angle: rotation.value * (3.14159 / 180),
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B4513),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.link, color: Colors.white, size: 40),
+                    ),
                   ),
                 ),
               ),
@@ -1132,7 +1176,8 @@ class _ParallelDemoState extends State<_ParallelDemo> {
     opacity.value = 0.0;
 
     final anim1 = scaleIn(scale, config: const ScaleConfig(duration: 500));
-    final anim2 = rotateIn(rotation, fromDegrees: 360.0, config: const RotateConfig(duration: 500));
+    final anim2 = rotateIn(rotation,
+        fromDegrees: 360.0, config: const RotateConfig(duration: 500));
     final anim3 = fadeIn(opacity, config: const FadeConfig(duration: 500));
 
     parallel([anim1, anim2, anim3]);
@@ -1142,31 +1187,33 @@ class _ParallelDemoState extends State<_ParallelDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Parallel',
-      description: 'Simultaneous animations',
-      onTrigger: _trigger,
+      description: 'Simultaneous animations (click to animate)',
       codeSnippet: '''
 final anim1 = scaleIn(scale);
 final anim2 = rotateIn(rotation);
 final anim3 = fadeIn(opacity);
 
 parallel([anim1, anim2, anim3]);''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Opacity(
-            opacity: opacity.value,
-            child: Transform.scale(
-              scale: scale.value,
-              child: Transform.rotate(
-                angle: rotation.value * (3.14159 / 180),
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD2691E),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.layers, color: Colors.white, size: 40),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Opacity(
+              opacity: opacity.value,
+              child: Transform.scale(
+                scale: scale.value,
+                child: Transform.rotate(
+                  angle: rotation.value * (3.14159 / 180),
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD2691E),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.layers, color: Colors.white, size: 40),
+                    ),
                   ),
                 ),
               ),
@@ -1211,8 +1258,7 @@ class _SpringDemoState extends State<_SpringDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Spring',
-      description: 'Physics-based motion',
-      onTrigger: _trigger,
+      description: 'Physics-based motion (click to animate)',
       codeSnippet: '''
 final anim = spring(
   property: scale,
@@ -1221,19 +1267,22 @@ final anim = spring(
   damping: 10.0,
 );
 anim.play();''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.scale(
-            scale: scale.value,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6B6B6B),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: const Center(
-                child: Icon(Icons.timeline, color: Colors.white, size: 40),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6B6B6B),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.timeline, color: Colors.white, size: 40),
+                ),
               ),
             ),
           ),
@@ -1268,8 +1317,7 @@ class _PingPongDemoState extends State<_PingPongDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Ping-Pong',
-      description: 'Oscillate between values',
-      onTrigger: _trigger,
+      description: 'Oscillate between values (click to animate)',
       codeSnippet: '''
 pingPong(
   property: scale,
@@ -1277,19 +1325,23 @@ pingPong(
   to: 1.4,
   times: 4,
 );''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.scale(
-            scale: scale.value,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: Color(0xFF4A4A4A),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(Icons.compare_arrows, color: Colors.white, size: 40),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.scale(
+              scale: scale.value,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4A4A4A),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child:
+                      Icon(Icons.compare_arrows, color: Colors.white, size: 40),
+                ),
               ),
             ),
           ),
@@ -1311,7 +1363,8 @@ class _YoyoDemoState extends State<_YoyoDemo> {
 
   void _trigger() {
     offsetX.value = 0.0;
-    final anim = slideInFromRight(offsetX, 60.0, config: const SlideConfig(duration: 300));
+    final anim = slideInFromRight(offsetX, 60.0,
+        config: const SlideConfig(duration: 300));
     yoyo(anim, times: 2);
   }
 
@@ -1319,26 +1372,28 @@ class _YoyoDemoState extends State<_YoyoDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Yoyo',
-      description: 'Back and forth motion',
-      onTrigger: _trigger,
+      description: 'Back and forth motion (click to animate)',
       codeSnippet: '''
 final anim = slideInFromRight(
   offsetX, 60.0,
 );
 yoyo(anim, times: 2);''',
-      child: Center(
-        child: ReactiveBuilder(
-          builder: (_) => Transform.translate(
-            offset: Offset(offsetX.value, 0),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B4513),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: const Center(
-                child: Icon(Icons.sync_alt, color: Colors.white, size: 40),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: ReactiveBuilder(
+            builder: (_) => Transform.translate(
+              offset: Offset(offsetX.value, 0),
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B4513),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Center(
+                  child: Icon(Icons.sync_alt, color: Colors.white, size: 40),
+                ),
               ),
             ),
           ),
@@ -1368,7 +1423,9 @@ class _StaggerDemoState extends State<_StaggerDemo> {
       s.value = 0.0;
     }
 
-    final anims = scales.map((s) => scaleIn(s, config: const ScaleConfig(duration: 300))).toList();
+    final anims = scales
+        .map((s) => scaleIn(s, config: const ScaleConfig(duration: 300)))
+        .toList();
     staggerStart(anims, delayMs: 100);
   }
 
@@ -1376,35 +1433,37 @@ class _StaggerDemoState extends State<_StaggerDemo> {
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Stagger',
-      description: 'Delayed starts',
-      onTrigger: _trigger,
+      description: 'Delayed starts (click to animate)',
       codeSnippet: '''
 final anims = scales.map((s) =>
   scaleIn(s)
 ).toList();
 
 staggerStart(anims, delayMs: 100);''',
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(4, (i) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: ReactiveBuilder(
-                builder: (_) => Transform.scale(
-                  scale: scales[i].value,
-                  child: Container(
-                    width: 20,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD2691E),
-                      borderRadius: BorderRadius.circular(2),
+      child: ClickableDemo(
+        onTrigger: _trigger,
+        builder: (_) => Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(4, (i) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ReactiveBuilder(
+                  builder: (_) => Transform.scale(
+                    scale: scales[i].value,
+                    child: Container(
+                      width: 20,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD2691E),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
       ),
     );

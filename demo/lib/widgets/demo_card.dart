@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 class DemoCard extends StatefulWidget {
   final String title;
   final String description;
-  final VoidCallback onTrigger;
   final String codeSnippet;
   final Widget child;
 
@@ -12,7 +11,6 @@ class DemoCard extends StatefulWidget {
     super.key,
     required this.title,
     required this.description,
-    required this.onTrigger,
     required this.codeSnippet,
     required this.child,
   });
@@ -72,28 +70,15 @@ class _DemoCardState extends State<DemoCard> {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _showingCode ? Icons.visibility : Icons.code,
-                        size: 20,
-                      ),
-                      onPressed: () => setState(() => _showingCode = !_showingCode),
-                      tooltip: _showingCode ? 'Show demo' : 'Show code',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.play_arrow, size: 20),
-                      onPressed: widget.onTrigger,
-                      tooltip: 'Trigger animation',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+                IconButton(
+                  icon: Icon(
+                    _showingCode ? Icons.visibility : Icons.code,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _showingCode = !_showingCode),
+                  tooltip: _showingCode ? 'Show demo' : 'Show code',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),

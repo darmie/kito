@@ -17,38 +17,50 @@ class ReactiveBuilder extends StatefulWidget {
 }
 
 class _ReactiveBuilderState extends State<ReactiveBuilder> {
-  void Function()? _dispose;
+  void Function()? _disposeEffect;
+  Widget? _cachedWidget;
+  bool _needsRebuild = true;
 
   @override
   void initState() {
     super.initState();
-    _setupEffect();
+    _setupReactiveEffect();
   }
 
-  void _setupEffect() {
-    // The effect will automatically track dependencies during build
-    bool isFirstRun = true;
-    _dispose = () {
-      // This will be replaced by the actual effect dispose function
-    };
+  void _setupReactiveEffect() {
+    // Create an effect that will re-run whenever any signals accessed in the builder change
+    _disposeEffect = effect(() {
+      // Build the widget inside the effect so signal accesses are tracked
+      _cachedWidget = widget.builder(context);
 
-    // We need to manually create an effect that rebuilds on changes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
+      // After the first build, subsequent runs of this effect mean dependencies changed
+      if (!_needsRebuild) {
+        // Schedule a rebuild
+        if (mounted) {
+          setState(() {
+            _needsRebuild = true;
+          });
+        }
       }
+      _needsRebuild = false;
     });
   }
 
   @override
   void dispose() {
-    _dispose?.call();
+    _disposeEffect?.call();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context);
+    if (_needsRebuild || _cachedWidget == null) {
+      // Re-setup the effect to track dependencies again
+      _disposeEffect?.call();
+      _needsRebuild = true;
+      _setupReactiveEffect();
+    }
+    return _cachedWidget ?? const SizedBox.shrink();
   }
 }
 
@@ -167,21 +179,32 @@ class KitoAnimatedWidget extends StatelessWidget {
 class _SignalListenable<T> extends ChangeNotifier {
   final Signal<T> _signal;
   void Function()? _dispose;
+  bool _isFirstRun = true;
 
   _SignalListenable(this._signal) {
-    // We'd ideally use an effect here, but for simplicity,
-    // we'll use a different approach
     _setupListener();
   }
 
   void _setupListener() {
-    // In a real implementation, we'd set up proper reactive listening
-    // For now, we'll trigger updates on signal changes
-    // This is a simplified version - production code would integrate better
-  }
+    // Create an effect that watches the signal and notifies listeners when it changes
+    _dispose = effect(() {
+      // Access the signal value to track it as a dependency
+      _signal.value;
 
-  void triggerUpdate() {
-    notifyListeners();
+      // Skip notifying on the first run (initialization)
+      if (_isFirstRun) {
+        _isFirstRun = false;
+        return;
+      }
+
+      // Notify Flutter's AnimatedBuilder that the value changed
+      // Use microtask to avoid calling notifyListeners during build
+      Future.microtask(() {
+        if (hasListeners) {
+          notifyListeners();
+        }
+      });
+    });
   }
 
   @override
