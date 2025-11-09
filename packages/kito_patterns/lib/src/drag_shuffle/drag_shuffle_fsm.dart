@@ -104,6 +104,9 @@ class DragItemContext {
   AnimatableProperty<double> offsetX = animatableDouble(0.0);
   AnimatableProperty<double> offsetY = animatableDouble(0.0);
 
+  /// Absolute Y position (for smooth animations without jumps)
+  late AnimatableProperty<double> absoluteY;
+
   /// Scale
   AnimatableProperty<double> scale = animatableDouble(1.0);
 
@@ -122,7 +125,10 @@ class DragItemContext {
   DragItemContext({
     required this.config,
     required this.index,
-  }) : targetIndex = index;
+    double initialY = 0.0,
+  }) : targetIndex = index {
+    absoluteY = animatableDouble(initialY);
+  }
 }
 
 
@@ -140,6 +146,9 @@ class DragShuffleController<T> {
 
   /// Reactive signal that increments on every animation frame
   late final Signal<int> _frameCounter;
+
+  /// Height of each item (for position calculations)
+  double _itemHeight = 60.0;
 
   int? _draggingIndex;
   int? _targetIndex;
@@ -159,7 +168,8 @@ class DragShuffleController<T> {
   int get frameCounter => _frameCounter.value;
 
   /// Initialize items with a list
-  void initializeItems(List<T> items) {
+  void initializeItems(List<T> items, {double itemHeight = 60.0}) {
+    _itemHeight = itemHeight;
     _currentOrder.value = List.from(items);
     _itemContexts.clear();
 
@@ -168,6 +178,7 @@ class DragShuffleController<T> {
       _itemContexts[items[i]] = DragItemContext(
         config: config,
         index: i,
+        initialY: i * itemHeight,
       );
     }
   }
@@ -275,55 +286,65 @@ class DragShuffleController<T> {
   }
 
   void _animateDisplacement(int oldTarget, int newTarget) {
-    // Determine which items need to move
-    final start = oldTarget < newTarget ? oldTarget : newTarget;
-    final end = oldTarget < newTarget ? newTarget : oldTarget;
-
-    for (var i = start; i <= end; i++) {
-      if (i == _draggingIndex) continue;
-
-      final item = _currentOrder.value[i];
-      final ctx = _itemContexts[item]!;
-      final displacement = _calculateDisplacement(i, newTarget);
-
-      ctx.currentAnimation?.dispose();
-      ctx.currentAnimation = animate()
-          .to(ctx.offsetY, displacement)
-          .to(ctx.scale, displacement != 0 ? config.displaceScale : 1.0)
-          .withDuration(config.repositionDuration)
-          .withEasing(config.repositionEasing)
-          .onUpdate((t) => _frameCounter.value++) // Trigger rebuild on each frame
-          .build()
-        ..play();
-    }
-  }
-
-  double _calculateDisplacement(int itemIndex, int targetIndex) {
-    if (_draggingIndex == null) return 0.0;
+    if (_draggingIndex == null) return;
 
     final dragIndex = _draggingIndex!;
 
-    // Item height approximation (would be configurable in real implementation)
-    const itemHeight = 60.0;
+    // Animate all items to their target positions
+    for (var i = 0; i < _currentOrder.value.length; i++) {
+      if (i == dragIndex) continue; // Skip the dragged item
 
-    if (dragIndex < targetIndex) {
-      // Dragging downward
-      if (itemIndex > dragIndex && itemIndex <= targetIndex) {
-        return -itemHeight; // Move up
+      final item = _currentOrder.value[i];
+      final ctx = _itemContexts[item]!;
+
+      // Calculate target Y position based on whether this item needs to make space
+      double targetY;
+      bool isDisplaced = false;
+
+      if (dragIndex < newTarget) {
+        // Dragging downward: items between drag and target move up
+        if (i > dragIndex && i <= newTarget) {
+          targetY = (i - 1) * _itemHeight; // Move up one slot
+          isDisplaced = true;
+        } else {
+          targetY = i * _itemHeight; // Stay in place
+        }
+      } else if (dragIndex > newTarget) {
+        // Dragging upward: items between target and drag move down
+        if (i >= newTarget && i < dragIndex) {
+          targetY = (i + 1) * _itemHeight; // Move down one slot
+          isDisplaced = true;
+        } else {
+          targetY = i * _itemHeight; // Stay in place
+        }
+      } else {
+        targetY = i * _itemHeight; // No displacement needed
       }
-    } else if (dragIndex > targetIndex) {
-      // Dragging upward
-      if (itemIndex < dragIndex && itemIndex >= targetIndex) {
-        return itemHeight; // Move down
+
+      ctx.currentAnimation?.dispose();
+
+      // Animate to target position with fade effect for displaced items
+      // Note: Only animate position and opacity, NOT scale (to avoid jumps)
+      ctx.currentAnimation = animate()
+          .to(ctx.absoluteY, targetY)
+          .to(ctx.opacity, isDisplaced ? 0.7 : 1.0)
+          .withDuration(config.repositionDuration)
+          .withEasing(config.repositionEasing)
+          .onUpdate((t) => _frameCounter.value++)
+          .build()
+        ..play();
+
+      // Ensure scale is reset for displaced items
+      if (!isDisplaced) {
+        ctx.scale.value = 1.0;
       }
     }
-
-    return 0.0;
   }
 
   void _animateDrop(DragItemContext ctx, int dropIndex) {
     ctx.currentAnimation?.dispose();
     ctx.currentAnimation = animate()
+        .to(ctx.absoluteY, dropIndex * _itemHeight)
         .to(ctx.offsetX, 0.0)
         .to(ctx.offsetY, 0.0)
         .to(ctx.scale, 1.0)
@@ -338,13 +359,16 @@ class DragShuffleController<T> {
 
     // Reset other items after drop
     Future.delayed(Duration(milliseconds: config.dropDuration), () {
-      for (final item in _currentOrder.value) {
+      for (var i = 0; i < _currentOrder.value.length; i++) {
+        final item = _currentOrder.value[i];
         final otherCtx = _itemContexts[item]!;
-        if (otherCtx != ctx) {
-          otherCtx.offsetX.value = 0.0;
-          otherCtx.offsetY.value = 0.0;
-          otherCtx.scale.value = 1.0;
-        }
+
+        // Ensure all items are at their final positions
+        otherCtx.absoluteY.value = i * _itemHeight;
+        otherCtx.offsetX.value = 0.0;
+        otherCtx.offsetY.value = 0.0;
+        otherCtx.scale.value = 1.0;
+        otherCtx.opacity.value = 1.0;
       }
       _frameCounter.value++; // Final rebuild
     });

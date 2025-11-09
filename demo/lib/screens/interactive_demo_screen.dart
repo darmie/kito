@@ -60,7 +60,8 @@ class _PullToRefreshDemoState extends State<_PullToRefreshDemo> {
     if (isRefreshing.value) return;
 
     // Update pull offset based on drag
-    final newOffset = (pullOffset.value + details.delta.dy).clamp(0.0, threshold + 40);
+    final newOffset =
+        (pullOffset.value + details.delta.dy).clamp(0.0, threshold + 40);
     pullOffset.value = newOffset;
 
     // Update indicator visibility and scale
@@ -173,7 +174,9 @@ fsm.dispatch(PullToRefreshEvent.release);''',
                       child: Transform.rotate(
                         angle: refreshRotation.value * (3.14159 / 180),
                         child: Icon(
-                          isRefreshing.value ? Icons.refresh : Icons.arrow_downward,
+                          isRefreshing.value
+                              ? Icons.refresh
+                              : Icons.arrow_downward,
                           size: 40,
                           color: Color.lerp(
                             Colors.grey,
@@ -194,7 +197,10 @@ fsm.dispatch(PullToRefreshEvent.release);''',
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(2),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.2),
                         ),
                       ),
                       child: Center(
@@ -204,7 +210,10 @@ fsm.dispatch(PullToRefreshEvent.release);''',
                             Icon(
                               Icons.list,
                               size: 40,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.5),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -221,10 +230,15 @@ fsm.dispatch(PullToRefreshEvent.release);''',
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
                                   '✓ Release to refresh!',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ),
                             if (refreshCount.value > 0)
@@ -259,93 +273,29 @@ class _DragShuffleListDemo extends StatefulWidget {
 }
 
 class _DragShuffleListDemoState extends State<_DragShuffleListDemo> {
-  late final Signal<List<String>> items;
-  final positions = <String, AnimatableProperty<double>>{};
-  final scales = <String, AnimatableProperty<double>>{};
-  final rotations = <String, AnimatableProperty<double>>{};
-  late final Signal<String?> draggingItem;
+  late final DragShuffleController<String> controller;
   late final Signal<int> swapCount;
   final itemHeight = 50.0;
 
   @override
   void initState() {
     super.initState();
-    items = signal(['Item 1', 'Item 2', 'Item 3', 'Item 4']);
-    draggingItem = signal(null);
     swapCount = signal(0);
 
-    // Initialize properties keyed by item name
-    for (var i = 0; i < items.value.length; i++) {
-      final item = items.value[i];
-      positions[item] = animatableDouble(i * itemHeight);
-      scales[item] = animatableDouble(1.0);
-      rotations[item] = animatableDouble(0.0);
-    }
+    controller = DragShuffleController<String>(
+      config: DragShuffleConfig.playful,
+      onReorder: (newOrder) {
+        swapCount.value++;
+      },
+    );
+
+    controller.initializeItems(['Item 1', 'Item 2', 'Item 3', 'Item 4'], itemHeight: itemHeight);
   }
 
-  void _onDragStart(int index) {
-    final item = items.value[index];
-    draggingItem.value = item;
-
-    // Animate scale and rotation on drag start
-    animate()
-        .to(scales[item]!, 1.05)
-        .to(rotations[item]!, 0.05)
-        .withDuration(150)
-        .withEasing(Easing.easeOutCubic)
-        .build()
-        .play();
-  }
-
-  void _onDragEnd() {
-    final item = draggingItem.value;
-    if (item != null) {
-      // Animate back to normal
-      animate()
-          .to(scales[item]!, 1.0)
-          .to(rotations[item]!, 0.0)
-          .withDuration(200)
-          .withEasing(Easing.easeOutCubic)
-          .build()
-          .play();
-    }
-    draggingItem.value = null;
-  }
-
-  void _onItemDropped(int draggedIndex, int targetIndex) {
-    if (draggedIndex == targetIndex) return;
-
-    swapCount.value++;
-
-    final draggedItem = items.value[draggedIndex];
-    final targetItem = items.value[targetIndex];
-
-    // Calculate target positions based on new indices
-    final draggedTargetPos = targetIndex * itemHeight;
-    final targetTargetPos = draggedIndex * itemHeight;
-
-    // Animate position swap
-    final anim1 = animate()
-        .to(positions[draggedItem]!, draggedTargetPos)
-        .withDuration(300)
-        .withEasing(Easing.easeOutCubic)
-        .build();
-
-    final anim2 = animate()
-        .to(positions[targetItem]!, targetTargetPos)
-        .withDuration(300)
-        .withEasing(Easing.easeOutCubic)
-        .build();
-
-    anim1.play();
-    anim2.play();
-
-    // Swap items in the list
-    final newItems = List<String>.from(items.value);
-    final temp = newItems[draggedIndex];
-    newItems[draggedIndex] = newItems[targetIndex];
-    newItems[targetIndex] = temp;
-    items.value = newItems;
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -353,138 +303,176 @@ class _DragShuffleListDemoState extends State<_DragShuffleListDemo> {
     return DemoCard(
       title: 'Drag-Shuffle List',
       description: 'Drag items to reorder',
-      codeSnippet: '''final fsm = DragShuffleListStateMachine(
-  items: items,
-  positions: positions,
+      codeSnippet: '''final controller = DragShuffleController<String>(
   config: DragShuffleConfig.playful,
-  repositionMode: RepositionMode.swap,
+  onReorder: (newOrder) {
+    print('New order: \$newOrder');
+  },
 );
 
+controller.initializeItems(['Item 1', 'Item 2', ...]);
+
 // User drags item
-fsm.dispatch(DragShuffleEvent.startDrag);
-fsm.dispatch(DragShuffleEvent.hoverTarget);
-fsm.dispatch(DragShuffleEvent.drop);''',
+controller.startDrag(visualIndex);
+controller.updateTargetPosition(newTargetIndex);
+controller.drop();''',
       child: ReactiveBuilder(
-        builder: (_) => Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 220,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.background,
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+        builder: (_) {
+          // Access frameCounter to trigger rebuild on animation frames
+          controller.frameCounter;
+
+          // Calculate dynamic height: (items * itemHeight) + padding
+          final numItems = controller.currentOrder.length;
+          final totalItemsHeight = numItems * itemHeight;
+          const containerPadding = 32.0; // 16 top + 16 bottom
+          final containerHeight = totalItemsHeight + containerPadding;
+
+          return Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  height: containerHeight,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.background,
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.2),
+                    ),
                   ),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final itemWidth = constraints.maxWidth - 32; // Subtract left + right padding
-                    return Stack(
-                      children: List.generate(items.value.length, (i) {
-                        final item = items.value[i];
-                        final isDragging = draggingItem.value == item;
-                        return Positioned(
-                          left: 16,
-                          right: 16,
-                          top: positions[item]!.value,
-                          child: DragTarget<int>(
-                            onAcceptWithDetails: (details) => _onItemDropped(details.data, i),
-                            builder: (context, candidateData, rejectedData) {
-                              return Draggable<int>(
-                                data: i,
-                                onDragStarted: () => _onDragStart(i),
-                                onDragEnd: (_) => _onDragEnd(),
-                                feedback: Material(
-                                  color: Colors.transparent,
-                                  child: Transform.scale(
-                                    scale: 1.1,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final itemWidth = constraints.maxWidth - 32;
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Stack(
+                          children: List.generate(controller.currentOrder.length, (i) {
+                          final item = controller.getItemAt(i);
+                          final ctx = controller.getContextAt(i);
+
+                          return Positioned(
+                            left: 16,
+                            width: itemWidth,
+                            top: ctx.absoluteY.value,
+                            child: DragTarget<int>(
+                              onAcceptWithDetails: (details) {
+                                controller.drop();
+                              },
+                              onWillAcceptWithDetails: (details) {
+                                controller.updateTargetPosition(i);
+                                return true;
+                              },
+                              builder: (context, candidateData, rejectedData) {
+                                return Draggable<int>(
+                                  data: i,
+                                  onDragStarted: () => controller.startDrag(i),
+                                  onDragEnd: (_) => controller.drop(),
+                                  feedback: Transform.scale(
+                                    scale: ctx.scale.value,
                                     child: Transform.rotate(
-                                      angle: 0.05,
-                                      child: Opacity(
-                                        opacity: 0.8,
-                                        child: Container(
-                                          width: itemWidth,
-                                      height: 42,
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(2),
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.primary,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const SizedBox(width: 12),
-                                          Icon(
-                                            Icons.drag_indicator,
-                                            size: 20,
+                                      angle: ctx.rotation.value * (3.14159 / 180),
+                                      child: Container(
+                                        width: itemWidth,
+                                        height: 42,
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(2),
+                                          border: Border.all(
                                             color: Theme.of(context).colorScheme.primary,
+                                            width: 2,
                                           ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            items.value[i],
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                              fontWeight: FontWeight.w600,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.3),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 6),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const SizedBox(width: 12),
+                                            Icon(
+                                              Icons.drag_indicator,
+                                              size: 20,
+                                              color: Theme.of(context).colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              item,
+                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: Theme.of(context).colorScheme.primary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
+                                  feedbackOffset: const Offset(-16, 0),
+                                  childWhenDragging: Opacity(
+                                    opacity: 0.3,
+                                    child: _buildListItem(context, item, ctx, false),
+                                  ),
+                                  child: _buildListItem(context, item, ctx, false),
+                                );
+                              },
                             ),
-                            childWhenDragging: Opacity(
-                              opacity: 0.3,
-                              child: _buildListItem(context, i, false),
-                            ),
-                            child: _buildListItem(context, i, isDragging),
                           );
-                        },
-                      ),
-                    );
-                  }),
-                    );
-                  },
+                        }),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              if (swapCount.value > 0)
-                Text(
-                  'Swaps: ${swapCount.value}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 12),
+                if (swapCount.value > 0)
+                  Text(
+                    'Swaps: ${swapCount.value}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildListItem(BuildContext context, int i, bool isDragging) {
-    final item = items.value[i];
+  Widget _buildListItem(BuildContext context, String item, DragItemContext ctx, bool isActive) {
     return Transform.scale(
-      scale: scales[item]!.value,
+      scale: ctx.scale.value,
       child: Transform.rotate(
-        angle: rotations[item]!.value,
+        angle: ctx.rotation.value * (3.14159 / 180),
         child: Container(
           height: 42,
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: isDragging
+            color: isActive
                 ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
                 : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(2),
             border: Border.all(
-              color: isDragging
+              color: isActive
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-              width: isDragging ? 2 : 1,
+              width: isActive ? 2 : 1,
             ),
+            boxShadow: ctx.elevation.value > 0
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: ctx.elevation.value,
+                      offset: Offset(0, ctx.elevation.value / 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
@@ -496,10 +484,11 @@ fsm.dispatch(DragShuffleEvent.drop);''',
               ),
               const SizedBox(width: 12),
               Text(
-                items.value[i],
+                item,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: isDragging ? FontWeight.w600 : FontWeight.normal,
-                ),
+                      fontWeight:
+                          isActive ? FontWeight.w600 : FontWeight.normal,
+                    ),
               ),
             ],
           ),
@@ -510,19 +499,26 @@ fsm.dispatch(DragShuffleEvent.drop);''',
 }
 
 // Drag-Shuffle Grid Demo
-class _DragShuffleGridDemo extends StatefulWidget {
+class _DragShuffleGridDemo extends StatelessWidget {
   const _DragShuffleGridDemo();
 
   @override
-  State<_DragShuffleGridDemo> createState() => _DragShuffleGridDemoState();
+  Widget build(BuildContext context) {
+    return const _DragShuffleGridDemoContent();
+  }
 }
 
-class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
-  final gridItems = List.generate(9, (i) => i + 1);
-  final gridPositions = <int, AnimatableProperty<Offset>>{};
-  int? draggingIndex;
-  int swapCount = 0;
-  GridRepositionMode currentMode = GridRepositionMode.wave;
+class _DragShuffleGridDemoContent extends StatefulWidget {
+  const _DragShuffleGridDemoContent();
+
+  @override
+  State<_DragShuffleGridDemoContent> createState() => _DragShuffleGridDemoContentState();
+}
+
+class _DragShuffleGridDemoContentState extends State<_DragShuffleGridDemoContent> {
+  late final DragShuffleGridController<int> controller;
+  late final Signal<int> swapCount;
+  late final Signal<GridRepositionMode> currentMode;
 
   final columns = 3;
   final itemSize = 55.0;
@@ -531,278 +527,250 @@ class _DragShuffleGridDemoState extends State<_DragShuffleGridDemo> {
   @override
   void initState() {
     super.initState();
-    _initPositions();
+    swapCount = signal(0);
+    currentMode = signal(GridRepositionMode.wave);
+
+    controller = DragShuffleGridController<int>(
+      config: DragShuffleGridConfig(
+        columns: columns,
+        itemWidth: itemSize,
+        itemHeight: itemSize,
+        horizontalGap: gap,
+        verticalGap: gap,
+        repositionMode: currentMode.value,
+      ),
+      onReorder: (newOrder) {
+        swapCount.value++;
+      },
+    );
+
+    controller.initializeItems(List.generate(9, (i) => i + 1));
   }
 
-  void _initPositions() {
-    for (var i = 0; i < gridItems.length; i++) {
-      final row = i ~/ columns;
-      final col = i % columns;
-      gridPositions[i] = animatableOffset(
-        Offset(col * (itemSize + gap), row * (itemSize + gap)),
-      );
-    }
-  }
-
-  Offset _getPositionForIndex(int index) {
-    final row = index ~/ columns;
-    final col = index % columns;
-    return Offset(col * (itemSize + gap), row * (itemSize + gap));
-  }
-
-  void _trigger() {
-    // Reset
-    swapCount = 0;
-    setState(() {
-      for (var i = 0; i < gridItems.length; i++) {
-        gridItems[i] = i + 1;
-      }
-    });
-
-    // Simulate grid shuffle sequence
-    _simulateGridShuffle();
-  }
-
-  void _simulateGridShuffle() async {
-    // Shuffle: swap corners
-    await _animateGridSwap(0, 8); // Top-left with bottom-right
-    await Future.delayed(const Duration(milliseconds: 900));
-
-    // Shuffle: swap middle edges
-    await _animateGridSwap(1, 7); // Top-middle with bottom-middle
-    await Future.delayed(const Duration(milliseconds: 900));
-
-    // Shuffle: swap center with corner
-    await _animateGridSwap(4, 2); // Center with top-right
-  }
-
-  Future<void> _animateGridSwap(int index1, int index2) async {
-    setState(() {
-      draggingIndex = index1;
-      swapCount++;
-    });
-
-    // Get target positions
-    final targetPos1 = _getPositionForIndex(index2);
-    final targetPos2 = _getPositionForIndex(index1);
-
-    // Determine animation delays based on mode
-    final delays = _calculateDelays(index1, index2);
-
-    // Animate with stagger
-    Future.delayed(Duration(milliseconds: delays[index1]!), () {
-      final anim1 = animate()
-          .to(gridPositions[index1]!, targetPos1)
-          .withDuration(450)
-          .withEasing(Easing.easeInOutCubic)
-          .build();
-      anim1.play();
-    });
-
-    Future.delayed(Duration(milliseconds: delays[index2]!), () {
-      final anim2 = animate()
-          .to(gridPositions[index2]!, targetPos2)
-          .withDuration(450)
-          .withEasing(Easing.easeInOutCubic)
-          .build();
-      anim2.play();
-    });
-
-    // Swap in items array
-    await Future.delayed(const Duration(milliseconds: 300));
-    setState(() {
-      final temp = gridItems[index1];
-      gridItems[index1] = gridItems[index2];
-      gridItems[index2] = temp;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 300));
-    setState(() {
-      draggingIndex = null;
-    });
-  }
-
-  Map<int, int> _calculateDelays(int index1, int index2) {
-    final delays = <int, int>{};
-
-    switch (currentMode) {
-      case GridRepositionMode.simultaneous:
-        delays[index1] = 0;
-        delays[index2] = 0;
-        break;
-
-      case GridRepositionMode.wave:
-        final row1 = index1 ~/ columns;
-        final row2 = index2 ~/ columns;
-        delays[index1] = row1 * 50;
-        delays[index2] = row2 * 50;
-        break;
-
-      case GridRepositionMode.radial:
-        // Delay based on distance from center
-        final center = 4; // Middle of 3x3 grid
-        final dist1 = (index1 - center).abs();
-        final dist2 = (index2 - center).abs();
-        delays[index1] = dist1 * 40;
-        delays[index2] = dist2 * 40;
-        break;
-
-      case GridRepositionMode.rowByRow:
-        final row1 = index1 ~/ columns;
-        final row2 = index2 ~/ columns;
-        delays[index1] = row1 * 80;
-        delays[index2] = row2 * 80;
-        break;
-
-      case GridRepositionMode.columnByColumn:
-        final col1 = index1 % columns;
-        final col2 = index2 % columns;
-        delays[index1] = col1 * 80;
-        delays[index2] = col2 * 80;
-        break;
-    }
-
-    return delays;
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return DemoCard(
       title: 'Drag-Shuffle Grid',
-      description: 'Reorderable 2D grid items (click to animate)',
-      codeSnippet: '''final fsm = DragShuffleGridStateMachine(
-  items: items,
-  positions: positions,
+      description: 'Drag items to reorder in 2D grid',
+      codeSnippet: '''final controller = DragShuffleGridController<int>(
   config: DragShuffleGridConfig(
     columns: 3,
-    itemWidth: 50,
-    itemHeight: 50,
+    itemWidth: 55,
+    itemHeight: 55,
     repositionMode: GridRepositionMode.wave,
   ),
+  onReorder: (newOrder) {
+    print('New order: \$newOrder');
+  },
 );
 
-// User drags grid item
-fsm.dispatch(DragShuffleEvent.startDrag);
-fsm.dispatch(DragShuffleEvent.drop);''',
-      child: ClickableDemo(
-        onTrigger: _trigger,
-        builder: (_) => ReactiveBuilder(
-        builder: (__) => Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: columns * (itemSize + gap),
-                height: columns * (itemSize + gap),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.background,
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                  ),
-                ),
-                child: Stack(
-                  children: List.generate(gridItems.length, (i) {
-                    final isDragging = draggingIndex == i;
-                    final position = gridPositions[i]!.value;
+controller.initializeItems([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
-                    return Positioned(
-                      left: position.dx,
-                      top: position.dy,
-                      child: Transform.scale(
-                        scale: isDragging ? 1.08 : 1.0,
-                        child: Transform.rotate(
-                          angle: isDragging ? 0.05 : 0.0,
-                          child: Opacity(
-                            opacity: isDragging ? 0.9 : 1.0,
-                            child: Container(
-                              width: itemSize,
-                              height: itemSize,
-                              decoration: BoxDecoration(
-                                color: isDragging
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(2),
-                                border: Border.all(
-                                  color: isDragging
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                                  width: isDragging ? 2 : 1,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${gridItems[i]}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: isDragging ? FontWeight.w700 : FontWeight.w600,
-                                    color: isDragging
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
+// User drags item
+controller.startDrag(visualIndex);
+controller.updateTargetPosition(newTargetIndex);
+controller.drop();''',
+      child: ReactiveBuilder(
+        builder: (_) {
+          // Access frameCounter to trigger rebuild on animation frames
+          controller.frameCounter;
+
+          final gridWidth = columns * (itemSize + gap);
+          final gridHeight = columns * (itemSize + gap);
+
+          return Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: gridWidth,
+                  height: gridHeight,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.background,
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.2),
+                    ),
+                  ),
+                  child: Stack(
+                    children: List.generate(controller.currentOrder.length, (i) {
+                      final item = controller.getItemAt(i);
+                      final ctx = controller.getContextAt(i);
+
+                      return Positioned(
+                        left: ctx.absoluteX.value,
+                        top: ctx.absoluteY.value,
+                        child: DragTarget<int>(
+                          onAcceptWithDetails: (details) {
+                            controller.drop();
+                          },
+                          onWillAcceptWithDetails: (details) {
+                            controller.updateTargetPosition(i);
+                            return true;
+                          },
+                          builder: (context, candidateData, rejectedData) {
+                            return Draggable<int>(
+                              data: i,
+                              onDragStarted: () => controller.startDrag(i),
+                              onDragEnd: (_) => controller.drop(),
+                              feedback: Transform.scale(
+                                scale: ctx.scale.value,
+                                child: Transform.rotate(
+                                  angle: ctx.rotation.value * (3.14159 / 180),
+                                  child: Container(
+                                    width: itemSize,
+                                    height: itemSize,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(2),
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '$item',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
+                              feedbackOffset: Offset(-itemSize / 2, -itemSize / 2),
+                              childWhenDragging: Opacity(
+                                opacity: 0.3,
+                                child: _buildGridItem(context, item, ctx, false),
+                              ),
+                              child: _buildGridItem(context, item, ctx, false),
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Mode selector
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                alignment: WrapAlignment.center,
-                children: [
-                  _modeChip(context, GridRepositionMode.wave, 'Wave'),
-                  _modeChip(context, GridRepositionMode.simultaneous, 'Simul'),
-                  _modeChip(context, GridRepositionMode.radial, 'Radial'),
-                  _modeChip(context, GridRepositionMode.rowByRow, 'Row'),
-                  _modeChip(context, GridRepositionMode.columnByColumn, 'Col'),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (swapCount > 0)
-                Text(
-                  'Swaps: $swapCount',
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(height: 12),
+                // Mode selector
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _modeChip(context, GridRepositionMode.wave, 'Wave'),
+                    _modeChip(context, GridRepositionMode.simultaneous, 'Simul'),
+                    _modeChip(context, GridRepositionMode.radial, 'Radial'),
+                    _modeChip(context, GridRepositionMode.rowByRow, 'Row'),
+                    _modeChip(context, GridRepositionMode.columnByColumn, 'Col'),
+                  ],
                 ),
-            ],
+                const SizedBox(height: 8),
+                if (swapCount.value > 0)
+                  Text(
+                    'Swaps: ${swapCount.value}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGridItem(BuildContext context, int item, GridItemContext ctx, bool isActive) {
+    return Transform.scale(
+      scale: ctx.scale.value,
+      child: Transform.rotate(
+        angle: ctx.rotation.value * (3.14159 / 180),
+        child: Container(
+          width: itemSize,
+          height: itemSize,
+          decoration: BoxDecoration(
+            color: isActive
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              width: isActive ? 2 : 1,
+            ),
+            boxShadow: ctx.elevation.value > 0
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: ctx.elevation.value,
+                      offset: Offset(0, ctx.elevation.value / 2),
+                    ),
+                  ]
+                : null,
           ),
-        ),
+          child: Center(
+            child: Text(
+              '$item',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                color: isActive ? Theme.of(context).colorScheme.primary : null,
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _modeChip(BuildContext context, GridRepositionMode mode, String label) {
-    return GestureDetector(
-      onTap: () => setState(() => currentMode = mode),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: currentMode == mode
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-              : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(
-            color: currentMode == mode
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+    return ReactiveBuilder(
+      builder: (_) {
+        final isSelected = currentMode.value == mode;
+        return GestureDetector(
+          onTap: () => currentMode.value = mode,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+                  : Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(2),
+              border: Border.all(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              ),
+            ),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                  ),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 10,
-            fontWeight: currentMode == mode ? FontWeight.w600 : FontWeight.normal,
-            color: currentMode == mode ? Theme.of(context).colorScheme.primary : null,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -991,9 +959,9 @@ void _deleteItem(item) {
       child: ClickableDemo(
         onTrigger: _trigger,
         builder: (_) => ReactiveBuilder(
-        builder: (context) {
-          return _buildList(context);
-        },
+          builder: (context) {
+            return _buildList(context);
+          },
         ),
       ),
     );
@@ -1015,14 +983,21 @@ void _deleteItem(item) {
                         Icon(
                           Icons.delete_sweep,
                           size: 48,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.3),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'All items deleted',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.5),
+                                  ),
                         ),
                       ],
                     ),
@@ -1051,7 +1026,8 @@ void _deleteItem(item) {
 
   Widget _buildItem(BuildContext context, ListItem item) {
     final isSwiping = swipingItemId == item.id;
-    final swipeProgress = (item.swipeOffset.value.dx.abs() / swipeThreshold).clamp(0.0, 1.0);
+    final swipeProgress =
+        (item.swipeOffset.value.dx.abs() / swipeThreshold).clamp(0.0, 1.0);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1064,7 +1040,10 @@ void _deleteItem(item) {
               color: Theme.of(context).colorScheme.error.withOpacity(0.2),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: Theme.of(context).colorScheme.error.withOpacity(swipeProgress),
+                color: Theme.of(context)
+                    .colorScheme
+                    .error
+                    .withOpacity(swipeProgress),
                 width: 2,
               ),
             ),
@@ -1077,7 +1056,10 @@ void _deleteItem(item) {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Icon(
                     Icons.delete,
-                    color: Theme.of(context).colorScheme.error.withOpacity(swipeProgress),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withOpacity(swipeProgress),
                     size: 24,
                   ),
                 ),
@@ -1104,12 +1086,16 @@ void _deleteItem(item) {
                       border: Border.all(
                         color: isSwiping
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.2),
                         width: isSwiping ? 2 : 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(isSwiping ? 0.2 : 0.1),
+                          color:
+                              Colors.black.withOpacity(isSwiping ? 0.2 : 0.1),
                           blurRadius: isSwiping ? 8 : 4,
                           offset: Offset(0, isSwiping ? 4 : 2),
                         ),
@@ -1135,15 +1121,23 @@ void _deleteItem(item) {
                         Expanded(
                           child: Text(
                             item.title,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: isSwiping ? FontWeight.w600 : FontWeight.normal,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontWeight: isSwiping
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                 ),
                           ),
                         ),
                         Icon(
                           Icons.drag_indicator,
                           size: 20,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.3),
                         ),
                         const SizedBox(width: 8),
                       ],

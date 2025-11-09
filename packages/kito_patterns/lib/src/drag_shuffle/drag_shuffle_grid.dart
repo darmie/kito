@@ -91,58 +91,38 @@ class GridItemContext extends DragItemContext {
   /// Grid configuration
   final DragShuffleGridConfig gridConfig;
 
-  /// Original row position
-  int originalRow;
+  /// Absolute X position (for smooth animations without jumps)
+  late AnimatableProperty<double> absoluteX;
 
-  /// Original column position
-  int originalCol;
-
-  /// Target row position
-  int targetRow;
-
-  /// Target column position
-  int targetCol;
+  /// Absolute Y position (for smooth animations without jumps - overrides parent)
+  @override
+  late AnimatableProperty<double> absoluteY;
 
   GridItemContext({
     required this.gridConfig,
-    required int index,
-    required DragShuffleConfig config,
-  })  : originalRow = gridConfig.rowFromIndex(index),
-        originalCol = gridConfig.colFromIndex(index),
-        targetRow = gridConfig.rowFromIndex(index),
-        targetCol = gridConfig.colFromIndex(index),
-        super(
-          config: config,
-          index: index,
-        );
-
-  /// Calculate position offset based on target grid position
-  void updateTargetPosition(int newIndex) {
-    targetRow = gridConfig.rowFromIndex(newIndex);
-    targetCol = gridConfig.colFromIndex(newIndex);
-    targetIndex = newIndex;
-  }
-
-  /// Get offset X for target position
-  double get targetOffsetX {
-    final currentX = gridConfig.xPositionForIndex(index);
-    final targetX = gridConfig.xPositionForIndex(targetIndex);
-    return targetX - currentX;
-  }
-
-  /// Get offset Y for target position
-  double get targetOffsetY {
-    final currentY = gridConfig.yPositionForIndex(index);
-    final targetY = gridConfig.yPositionForIndex(targetIndex);
-    return targetY - currentY;
+    required super.index,
+    required super.config,
+  }) : super(
+          initialY: gridConfig.yPositionForIndex(index),
+        ) {
+    absoluteX = animatableDouble(gridConfig.xPositionForIndex(index));
+    absoluteY = animatableDouble(gridConfig.yPositionForIndex(index));
   }
 }
 
-/// Controller for drag-and-shuffle grid
-class DragShuffleGridController {
+/// Controller for drag-and-shuffle grid with reactive state
+class DragShuffleGridController<T> {
   final DragShuffleGridConfig config;
-  final List<GridItemContext> items = [];
-  final void Function(int oldIndex, int newIndex)? onReorder;
+  final void Function(List<T> newOrder)? onReorder;
+
+  /// Current order of items (reactive signal)
+  late final Signal<List<T>> _currentOrder;
+
+  /// Animation contexts keyed by item (stable reference)
+  final Map<T, GridItemContext> _itemContexts = {};
+
+  /// Reactive signal that increments on every animation frame
+  late final Signal<int> _frameCounter;
 
   int? _draggingIndex;
   int? _targetIndex;
@@ -150,80 +130,52 @@ class DragShuffleGridController {
   DragShuffleGridController({
     required this.config,
     this.onReorder,
-  });
+  }) {
+    _currentOrder = signal<List<T>>([]);
+    _frameCounter = signal(0);
+  }
+
+  /// Get current order of items (reactive)
+  List<T> get currentOrder => _currentOrder.value;
+
+  /// Get frame counter for triggering reactive rebuilds
+  int get frameCounter => _frameCounter.value;
 
   /// Initialize grid items
-  void initializeItems(int count) {
-    items.clear();
-    for (var i = 0; i < count; i++) {
-      items.add(GridItemContext(
+  void initializeItems(List<T> items) {
+    _currentOrder.value = List.from(items);
+    _itemContexts.clear();
+
+    for (var i = 0; i < items.length; i++) {
+      _itemContexts[items[i]] = GridItemContext(
         gridConfig: config,
         index: i,
         config: config,
-      ));
+      );
     }
   }
 
-  /// Get item context
-  GridItemContext getItem(int index) => items[index];
+  /// Get item at visual position
+  T getItemAt(int visualIndex) => _currentOrder.value[visualIndex];
+
+  /// Get animation context for an item
+  GridItemContext getContext(T item) => _itemContexts[item]!;
+
+  /// Get animation context at visual position
+  GridItemContext getContextAt(int visualIndex) =>
+      _itemContexts[_currentOrder.value[visualIndex]]!;
 
   /// Get total number of rows
-  int get rowCount => (items.length / config.columns).ceil();
+  int get rowCount => (_currentOrder.value.length / config.columns).ceil();
 
-  /// Start dragging an item
-  void startDrag(int index) {
-    _draggingIndex = index;
-    _targetIndex = index;
+  /// Start dragging an item at visual position
+  void startDrag(int visualIndex) {
+    _draggingIndex = visualIndex;
+    _targetIndex = visualIndex;
 
-    final item = items[index];
-    _animateDragStart(item);
-  }
-
-  /// Update drag position (pixel coordinates)
-  void updateDragPosition(int index, double offsetX, double offsetY) {
-    if (_draggingIndex == null) return;
-
-    final item = items[index];
-    item.offsetX.value = offsetX;
-    item.offsetY.value = offsetY;
-
-    // Calculate which grid cell the drag is over
-    final draggedOverIndex =
-        _calculateGridIndexFromOffset(index, offsetX, offsetY);
-
-    if (draggedOverIndex != null && draggedOverIndex != _targetIndex) {
-      updateTargetPosition(draggedOverIndex);
-    }
-  }
-
-  /// Calculate which grid index is being dragged over
-  int? _calculateGridIndexFromOffset(
-      int draggedIndex, double offsetX, double offsetY) {
-    final item = items[draggedIndex];
-    final currentRow = item.originalRow;
-    final currentCol = item.originalCol;
-
-    // Calculate new position
-    final currentX = config.xPositionForIndex(draggedIndex);
-    final currentY = config.yPositionForIndex(draggedIndex);
-
-    final newX = currentX + offsetX;
-    final newY = currentY + offsetY;
-
-    // Convert to grid coordinates
-    final newCol =
-        (newX / config.itemWidthWithGap).round().clamp(0, config.columns - 1);
-    final newRow =
-        (newY / config.itemHeightWithGap).round().clamp(0, rowCount - 1);
-
-    final newIndex = config.indexFromRowCol(newRow, newCol);
-
-    // Make sure index is valid
-    if (newIndex >= 0 && newIndex < items.length) {
-      return newIndex;
-    }
-
-    return null;
+    final item = _currentOrder.value[visualIndex];
+    final ctx = _itemContexts[item]!;
+    _animateDragStart(ctx);
   }
 
   /// Update target drop position
@@ -237,19 +189,33 @@ class DragShuffleGridController {
     _animateGridDisplacement(oldTarget, newTargetIndex);
   }
 
-  /// Drop the item
+  /// Drop the item - handles reordering internally
   void drop() {
     if (_draggingIndex == null || _targetIndex == null) return;
 
     final dragIndex = _draggingIndex!;
     final dropIndex = _targetIndex!;
 
-    _animateDrop(items[dragIndex], dropIndex);
-
-    // Notify reorder callback
     if (dragIndex != dropIndex) {
-      onReorder?.call(dragIndex, dropIndex);
+      // REORDER INTERNALLY
+      final newOrder = List<T>.from(_currentOrder.value);
+      final item = newOrder.removeAt(dragIndex);
+      newOrder.insert(dropIndex, item);
+      _currentOrder.value = newOrder;
+
+      // Update all context indices to match new positions
+      for (var i = 0; i < newOrder.length; i++) {
+        _itemContexts[newOrder[i]]!.index = i;
+        _itemContexts[newOrder[i]]!.targetIndex = i;
+      }
+
+      // Notify parent of new order
+      onReorder?.call(List.unmodifiable(newOrder));
     }
+
+    final item = _currentOrder.value[dropIndex];
+    final ctx = _itemContexts[item]!;
+    _animateDrop(ctx, dropIndex);
 
     _draggingIndex = null;
     _targetIndex = null;
@@ -259,8 +225,9 @@ class DragShuffleGridController {
   void cancelDrag() {
     if (_draggingIndex == null) return;
 
-    final item = items[_draggingIndex!];
-    _animateCancel(item);
+    final item = _currentOrder.value[_draggingIndex!];
+    final ctx = _itemContexts[item]!;
+    _animateCancel(ctx);
 
     _draggingIndex = null;
     _targetIndex = null;
@@ -268,191 +235,189 @@ class DragShuffleGridController {
 
   // Animation helpers
 
-  void _animateDragStart(GridItemContext item) {
-    item.currentAnimation?.dispose();
-    item.currentAnimation = animate()
-        .to(item.scale, config.dragScale)
-        .to(item.opacity, config.dragOpacity)
-        .to(item.rotation, config.dragRotation)
-        .to(item.elevation, config.dragElevation)
+  void _animateDragStart(GridItemContext ctx) {
+    ctx.currentAnimation?.dispose();
+    ctx.currentAnimation = animate()
+        .to(ctx.scale, config.dragScale)
+        .to(ctx.opacity, config.dragOpacity)
+        .to(ctx.rotation, config.dragRotation)
+        .to(ctx.elevation, config.dragElevation)
         .withDuration(200)
         .withEasing(Easing.easeOutSine)
+        .onUpdate((t) => _frameCounter.value++) // Trigger rebuild on each frame
         .build()
       ..play();
   }
 
   void _animateGridDisplacement(int oldTarget, int newTarget) {
-    // Determine which items need to move
-    final start = oldTarget < newTarget ? oldTarget : newTarget;
-    final end = oldTarget < newTarget ? newTarget : oldTarget;
+    if (_draggingIndex == null) return;
 
-    for (var i = start; i <= end; i++) {
-      if (i == _draggingIndex) continue;
+    final dragIndex = _draggingIndex!;
 
-      final item = items[i];
-      final displacement = _calculateGridDisplacement(i, newTarget);
+    // Animate all items to their target positions
+    for (var i = 0; i < _currentOrder.value.length; i++) {
+      if (i == dragIndex) continue; // Skip the dragged item
+
+      final item = _currentOrder.value[i];
+      final ctx = _itemContexts[item]!;
+
+      // Calculate target position based on whether this item needs to make space
+      double targetX;
+      double targetY;
+      bool isDisplaced = false;
+
+      if (dragIndex < newTarget) {
+        // Dragging forward: items between drag and target move backward
+        if (i > dragIndex && i <= newTarget) {
+          final newIndex = i - 1;
+          targetX = config.xPositionForIndex(newIndex);
+          targetY = config.yPositionForIndex(newIndex);
+          isDisplaced = true;
+        } else {
+          targetX = config.xPositionForIndex(i);
+          targetY = config.yPositionForIndex(i);
+        }
+      } else if (dragIndex > newTarget) {
+        // Dragging backward: items between target and drag move forward
+        if (i >= newTarget && i < dragIndex) {
+          final newIndex = i + 1;
+          targetX = config.xPositionForIndex(newIndex);
+          targetY = config.yPositionForIndex(newIndex);
+          isDisplaced = true;
+        } else {
+          targetX = config.xPositionForIndex(i);
+          targetY = config.yPositionForIndex(i);
+        }
+      } else {
+        targetX = config.xPositionForIndex(i);
+        targetY = config.yPositionForIndex(i);
+      }
 
       // Calculate delay based on reposition mode
-      final delay = _calculateRepositionDelay(item, newTarget);
+      final delay = _calculateRepositionDelay(ctx, dragIndex, i);
 
-      item.currentAnimation?.dispose();
-      item.currentAnimation = animate()
-          .to(item.offsetX, displacement.dx)
-          .to(item.offsetY, displacement.dy)
-          .to(
-              item.scale,
-              displacement.dx != 0 || displacement.dy != 0
-                  ? config.displaceScale
-                  : 1.0)
+      ctx.currentAnimation?.dispose();
+
+      // Animate to target position with fade effect for displaced items
+      // Note: Only animate position and opacity, NOT scale (to avoid jumps)
+      ctx.currentAnimation = animate()
+          .to(ctx.absoluteX, targetX)
+          .to(ctx.absoluteY, targetY)
+          .to(ctx.opacity, isDisplaced ? 0.7 : 1.0)
           .withDelay(delay)
           .withDuration(config.repositionDuration)
           .withEasing(config.repositionEasing)
+          .onUpdate((t) => _frameCounter.value++)
           .build()
         ..play();
-    }
-  }
 
-  /// Calculate displacement offset for grid item
-  _Offset _calculateGridDisplacement(int itemIndex, int targetIndex) {
-    if (_draggingIndex == null) return _Offset(0.0, 0.0);
-
-    final dragIndex = _draggingIndex!;
-    final item = items[itemIndex];
-
-    // Determine if item should move
-    bool shouldMove = false;
-
-    if (dragIndex < targetIndex) {
-      // Dragging forward
-      if (itemIndex > dragIndex && itemIndex <= targetIndex) {
-        shouldMove = true;
-      }
-    } else if (dragIndex > targetIndex) {
-      // Dragging backward
-      if (itemIndex < dragIndex && itemIndex >= targetIndex) {
-        shouldMove = true;
+      // Ensure scale is reset for displaced items
+      if (!isDisplaced) {
+        ctx.scale.value = 1.0;
       }
     }
-
-    if (!shouldMove) {
-      return _Offset(0.0, 0.0);
-    }
-
-    // Calculate new position for this item
-    final newIndex = dragIndex < targetIndex ? itemIndex - 1 : itemIndex + 1;
-
-    final currentX = config.xPositionForIndex(itemIndex);
-    final currentY = config.yPositionForIndex(itemIndex);
-    final newX = config.xPositionForIndex(newIndex);
-    final newY = config.yPositionForIndex(newIndex);
-
-    return _Offset(newX - currentX, newY - currentY);
   }
 
   /// Calculate delay based on reposition mode
-  int _calculateRepositionDelay(GridItemContext item, int targetIndex) {
-    if (_draggingIndex == null) return 0;
-
-    final draggedItem = items[_draggingIndex!];
+  int _calculateRepositionDelay(GridItemContext ctx, int draggedIndex, int itemIndex) {
+    final draggedRow = config.rowFromIndex(draggedIndex);
+    final draggedCol = config.colFromIndex(draggedIndex);
+    final itemRow = config.rowFromIndex(itemIndex);
+    final itemCol = config.colFromIndex(itemIndex);
 
     switch (config.repositionMode) {
       case GridRepositionMode.simultaneous:
         return 0;
 
       case GridRepositionMode.wave:
-        // Delay based on distance from dragged item
-        final distance = _gridDistance(item, draggedItem);
-        return (distance * 30).toInt();
+        // Delay based on Manhattan distance from dragged item
+        final distance = (itemRow - draggedRow).abs() + (itemCol - draggedCol).abs();
+        return distance * 30;
 
       case GridRepositionMode.radial:
-        // Delay based on radial distance
-        final radialDist = _euclideanDistance(item, draggedItem);
+        // Delay based on Euclidean distance from dragged item
+        final dx = (itemCol - draggedCol).toDouble();
+        final dy = (itemRow - draggedRow).toDouble();
+        final radialDist = math.sqrt(dx * dx + dy * dy);
         return (radialDist * 40).toInt();
 
       case GridRepositionMode.rowByRow:
         // Same row moves first, then others
-        final rowDiff = (item.originalRow - draggedItem.originalRow).abs();
+        final rowDiff = (itemRow - draggedRow).abs();
         return rowDiff * 50;
 
       case GridRepositionMode.columnByColumn:
         // Same column moves first, then others
-        final colDiff = (item.originalCol - draggedItem.originalCol).abs();
+        final colDiff = (itemCol - draggedCol).abs();
         return colDiff * 50;
     }
   }
 
-  /// Calculate grid distance (Manhattan distance)
-  int _gridDistance(GridItemContext a, GridItemContext b) {
-    return (a.originalRow - b.originalRow).abs() +
-        (a.originalCol - b.originalCol).abs();
-  }
+  void _animateDrop(GridItemContext ctx, int dropIndex) {
+    final targetX = config.xPositionForIndex(dropIndex);
+    final targetY = config.yPositionForIndex(dropIndex);
 
-  /// Calculate Euclidean distance
-  double _euclideanDistance(GridItemContext a, GridItemContext b) {
-    final dx = (a.originalCol - b.originalCol).toDouble();
-    final dy = (a.originalRow - b.originalRow).toDouble();
-    return math.sqrt(dx * dx + dy * dy);
-  }
-
-  void _animateDrop(GridItemContext item, int dropIndex) {
-    final targetX = item.targetOffsetX;
-    final targetY = item.targetOffsetY;
-
-    item.currentAnimation?.dispose();
-    item.currentAnimation = animate()
-        .to(item.offsetX, targetX)
-        .to(item.offsetY, targetY)
-        .to(item.scale, 1.0)
-        .to(item.opacity, 1.0)
-        .to(item.rotation, 0.0)
-        .to(item.elevation, 0.0)
+    ctx.currentAnimation?.dispose();
+    ctx.currentAnimation = animate()
+        .to(ctx.absoluteX, targetX)
+        .to(ctx.absoluteY, targetY)
+        .to(ctx.offsetX, 0.0)
+        .to(ctx.offsetY, 0.0)
+        .to(ctx.scale, 1.0)
+        .to(ctx.opacity, 1.0)
+        .to(ctx.rotation, 0.0)
+        .to(ctx.elevation, 0.0)
         .withDuration(config.dropDuration)
         .withEasing(config.dropEasing)
+        .onUpdate((t) => _frameCounter.value++) // Trigger rebuild on each frame
         .build()
       ..play();
 
     // Reset other items after drop
     Future.delayed(Duration(milliseconds: config.dropDuration), () {
-      for (var i = 0; i < items.length; i++) {
-        final otherItem = items[i];
-        if (i != item.index) {
-          otherItem.offsetX.value = 0.0;
-          otherItem.offsetY.value = 0.0;
-          otherItem.scale.value = 1.0;
-          otherItem.updateTargetPosition(i);
-        } else {
-          // Update dragged item's target position
-          item.updateTargetPosition(dropIndex);
-        }
+      for (var i = 0; i < _currentOrder.value.length; i++) {
+        final item = _currentOrder.value[i];
+        final otherCtx = _itemContexts[item]!;
+
+        // Ensure all items are at their final positions
+        otherCtx.absoluteX.value = config.xPositionForIndex(i);
+        otherCtx.absoluteY.value = config.yPositionForIndex(i);
+        otherCtx.offsetX.value = 0.0;
+        otherCtx.offsetY.value = 0.0;
+        otherCtx.scale.value = 1.0;
+        otherCtx.opacity.value = 1.0;
       }
+      _frameCounter.value++; // Final rebuild
     });
   }
 
-  void _animateCancel(GridItemContext item) {
-    item.currentAnimation?.dispose();
-    item.currentAnimation = animate()
-        .to(item.offsetX, 0.0)
-        .to(item.offsetY, 0.0)
-        .to(item.scale, 1.0)
-        .to(item.opacity, 1.0)
-        .to(item.rotation, 0.0)
-        .to(item.elevation, 0.0)
+  void _animateCancel(GridItemContext ctx) {
+    ctx.currentAnimation?.dispose();
+    ctx.currentAnimation = animate()
+        .to(ctx.offsetX, 0.0)
+        .to(ctx.offsetY, 0.0)
+        .to(ctx.scale, 1.0)
+        .to(ctx.opacity, 1.0)
+        .to(ctx.rotation, 0.0)
+        .to(ctx.elevation, 0.0)
         .withDuration(250)
         .withEasing(Easing.easeOutCubic)
+        .onUpdate((t) => _frameCounter.value++)
         .build()
       ..play();
 
     // Reset displaced items
-    for (var i = 0; i < items.length; i++) {
-      final otherItem = items[i];
-      if (i != item.index) {
-        otherItem.currentAnimation?.dispose();
-        otherItem.currentAnimation = animate()
-            .to(otherItem.offsetX, 0.0)
-            .to(otherItem.offsetY, 0.0)
-            .to(otherItem.scale, 1.0)
+    for (final item in _currentOrder.value) {
+      final otherCtx = _itemContexts[item]!;
+      if (otherCtx != ctx) {
+        otherCtx.currentAnimation?.dispose();
+        otherCtx.currentAnimation = animate()
+            .to(otherCtx.offsetX, 0.0)
+            .to(otherCtx.offsetY, 0.0)
+            .to(otherCtx.scale, 1.0)
             .withDuration(250)
             .withEasing(Easing.easeOutCubic)
+            .onUpdate((t) => _frameCounter.value++)
             .build()
           ..play();
       }
@@ -461,16 +426,8 @@ class DragShuffleGridController {
 
   /// Dispose all animations
   void dispose() {
-    for (final item in items) {
-      item.currentAnimation?.dispose();
+    for (final ctx in _itemContexts.values) {
+      ctx.currentAnimation?.dispose();
     }
   }
-}
-
-/// Helper class for 2D offset
-class _Offset {
-  final double dx;
-  final double dy;
-
-  _Offset(this.dx, this.dy);
 }
