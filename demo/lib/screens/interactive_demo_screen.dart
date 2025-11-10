@@ -343,12 +343,13 @@ controller.drop();''',
           final containerHeight = totalItemsHeight + containerPadding;
 
           return Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  height: containerHeight,
+                Flexible(
+                  child: Container(
+                  constraints: BoxConstraints(maxHeight: containerHeight),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.background,
                     borderRadius: BorderRadius.circular(2),
@@ -444,6 +445,7 @@ controller.drop();''',
                         ),
                       );
                     },
+                  ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -602,11 +604,16 @@ controller.drop();''',
           final gridHeight = columns * (itemSize + gap);
 
           return Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
+                Flexible(
+                  child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: gridWidth,
+                    maxHeight: gridHeight,
+                  ),
                   width: gridWidth,
                   height: gridHeight,
                   decoration: BoxDecoration(
@@ -685,6 +692,7 @@ controller.drop();''',
                         ),
                       );
                     }),
+                  ),
                   ),
                 ),
                 const SizedBox(height: 12),
