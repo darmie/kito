@@ -5,6 +5,7 @@ import 'package:kito_patterns/kito_patterns.dart';
 import '../widgets/demo_card.dart';
 import '../widgets/clickable_demo.dart';
 
+
 class CompositionsDemoScreen extends StatelessWidget {
   const CompositionsDemoScreen({super.key});
 
@@ -17,10 +18,73 @@ class CompositionsDemoScreen extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
-            final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
-            final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+            final isMobile = constraints.maxWidth < 600;
+            final crossAxisCount = isMobile ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+            final padding = isMobile ? 16.0 : 24.0;
+            final spacing = isMobile ? 16.0 : 24.0;
 
+            // On mobile, each demo takes full viewport height
+            if (isMobile) {
+              return ListView(
+                padding: EdgeInsets.all(padding),
+                children: [
+                  // Match-3 preview (reduced size since it opens in modal)
+                  _Match3GamePreview(
+                    onTap: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (dialogContext) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 500,
+                                  ),
+                                  child: const _Match3GameDemo(),
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: IconButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    icon: const Icon(Icons.close),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.black.withValues(alpha: 0.5),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    tooltip: 'Close',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  SizedBox(height: spacing),
+                  SizedBox(
+                    height: constraints.maxHeight - (padding * 2),
+                    child: const _CardStackDemo(),
+                  ),
+                  SizedBox(height: spacing),
+                  SizedBox(
+                    height: constraints.maxHeight - (padding * 2),
+                    child: const _PhotoGalleryDemo(),
+                  ),
+                  SizedBox(height: spacing),
+                  SizedBox(
+                    height: constraints.maxHeight - (padding * 2),
+                    child: const _OnboardingFlowDemo(),
+                  ),
+                  SizedBox(height: spacing),
+                ],
+              );
+            }
+
+            // Desktop: use grid layout
             return GridView.count(
               padding: EdgeInsets.all(padding),
               crossAxisCount: crossAxisCount,
@@ -36,6 +100,60 @@ class CompositionsDemoScreen extends StatelessWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+// Preview widget that shows a tap-to-play card for the Match-3 game
+class _Match3GamePreview extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _Match3GamePreview({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(48),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.videogame_asset,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Match-3 Game',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap to Play',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Full-featured Match-3 game with tile swapping, matching, gravity, and scoring',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -306,7 +424,64 @@ class _Match3GameDemoState extends State<_Match3GameDemo> {
     // Check game over
     if (movesLeft.value <= 0) {
       gameOver.value = true;
+
+      // Show win modal if player won
+      if (score.value >= targetScore.value) {
+        _showWinModal();
+      }
     }
+  }
+
+  void _showWinModal() {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.celebration,
+                size: 64,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'You Won!',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Score: ${score.value}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Auto-close after 3 seconds and reset game
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close the dialog
+        _trigger(); // Reset the game
+      }
+    });
   }
 
   Future<bool> _processMatches() async {
@@ -553,110 +728,71 @@ if (!hadMatches) {
       child: Builder(
         builder: (context) => ReactiveBuilder(
           builder: (_) => Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-            children: [
-              // Game board
-              Container(
-                width: cols * (tileSize + gap) + gap,
-                height: rows * (tileSize + gap) + gap,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.background,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.2),
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Render all tiles
-                    for (var row = 0; row < rows; row++)
-                      for (var col = 0; col < cols; col++)
-                        if (grid[row][col] != null)
-                          _buildTile(grid[row][col]!, row, col),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 24),
-              // Stats panel
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _statRow(context, 'Score', score.value.toString(),
-                        highlight: score.value >= targetScore.value),
-                    const SizedBox(height: 8),
-                    _statRow(context, 'Target', targetScore.value.toString()),
-                    const SizedBox(height: 8),
-                    _statRow(context, 'Moves Left', movesLeft.value.toString(),
-                        highlight: movesLeft.value <= 3),
-                    const SizedBox(height: 12),
-                    if (combo.value > 1)
-                      _statRow(context, 'Combo', '${combo.value}x', highlight: true),
-                    const SizedBox(height: 12),
-
-                    // Reset button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _trigger,
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Reset Game'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                  // Game board
+                  Container(
+                    width: cols * (tileSize + gap) + gap,
+                    height: rows * (tileSize + gap) + gap,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.background,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.2),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    child: Stack(
+                      children: [
+                        // Render all tiles
+                        for (var row = 0; row < rows; row++)
+                          for (var col = 0; col < cols; col++)
+                            if (grid[row][col] != null)
+                              _buildTile(grid[row][col]!, row, col),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Stats panel
+                  SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                      _statRow(context, 'Score', score.value.toString(),
+                          highlight: score.value >= targetScore.value),
+                      const SizedBox(height: 8),
+                      _statRow(context, 'Target', targetScore.value.toString()),
+                      const SizedBox(height: 8),
+                      _statRow(context, 'Moves Left', movesLeft.value.toString(),
+                          highlight: movesLeft.value <= 3),
+                      const SizedBox(height: 12),
+                      if (combo.value > 1)
+                        _statRow(context, 'Combo', '${combo.value}x', highlight: true),
+                      const SizedBox(height: 12),
 
-                    // Game state
-                    if (gameOver.value)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: score.value >= targetScore.value
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.red.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: score.value >= targetScore.value
-                                ? Colors.green
-                                : Colors.red,
+                      // Reset button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _trigger,
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Reset Game'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                         ),
-                        child: Text(
-                          score.value >= targetScore.value ? '🎉 You Won!' : '💔 Game Over',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: score.value >= targetScore.value
-                                        ? Colors.green
-                                        : Colors.red,
-                                  ),
-                          textAlign: TextAlign.center,
-                        ),
                       ),
-
-                    const SizedBox(height: 16),
-                    Text(
-                      'How to Play:',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    _featureText(context, '• Drag tiles to swap'),
-                    _featureText(context, '• Swap with adjacent tiles'),
-                    _featureText(context, '• Match 3+ same colors'),
-                    _featureText(context, '• Reach target score!'),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -688,6 +824,7 @@ if (!hadMatches) {
       left: tile.position.value.dx + gap,
       top: tile.position.value.dy + gap,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onPanStart: (details) => _onPanStart(details, row, col),
         onPanUpdate: (details) => _onPanUpdate(details, row, col),
         onPanEnd: (details) => _onPanEnd(details, row, col),
@@ -742,16 +879,6 @@ if (!hadMatches) {
               ),
         ),
       ],
-    );
-  }
-
-  Widget _featureText(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
     );
   }
 }
@@ -1250,11 +1377,18 @@ class _PhotoGalleryDemoState extends State<_PhotoGalleryDemo> {
 
     final photo = photos.firstWhere((p) => p.id == photoId);
 
-    // Calculate fullscreen position and size
-    final targetPosition = const Offset(0, 0);
-    const targetSize = Size(400, 300); // Fullscreen size for demo container
+    // Calculate centered position and size
+    const targetSize = Size(400, 300);
+    final containerWidth = gridCols * (thumbSize + gap) - gap;
+    final containerHeight = gridRows * (thumbSize + gap) - gap;
 
-    // Animate selected photo to fullscreen
+    // Center the expanded photo in the container
+    final targetPosition = Offset(
+      (containerWidth - targetSize.width) / 2,
+      (containerHeight - targetSize.height) / 2,
+    );
+
+    // Animate selected photo to centered fullscreen
     final expandAnim = animate()
         .to(photo.position, targetPosition)
         .to(photo.size, targetSize)
@@ -1486,12 +1620,14 @@ class _OnboardingFlowDemoState extends State<_OnboardingFlowDemo> {
   List<OnboardingPage> pages = [];
   late final Signal<int> currentPage;
   late final Signal<bool> isAnimating;
+  late final Signal<double> dragStartX;
 
   @override
   void initState() {
     super.initState();
     currentPage = signal<int>(0);
     isAnimating = signal<bool>(false);
+    dragStartX = signal<double>(0.0);
     _initializePages();
     _showPage(0);
   }
@@ -1693,8 +1829,7 @@ final slideIn = animate()
 
 sequential([slideOut, slideIn]);
 ''',
-      child: ClickableDemo(
-        onTrigger: _trigger,
+      child: Builder(
         builder: (context) => ReactiveBuilder(
           builder: (_) {
             return _buildOnboarding(context);
@@ -1711,20 +1846,45 @@ sequential([slideOut, slideIn]);
         children: [
           // Page content
           Expanded(
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                ...pages.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final page = entry.value;
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (details) {
+                dragStartX.value = details.globalPosition.dx;
+                print('Drag started at: ${dragStartX.value}');
+              },
+              onHorizontalDragEnd: (details) {
+                if (isAnimating.value) return;
 
-                  if (index != currentPage.value) {
-                    return const SizedBox.shrink();
-                  }
+                final dragEndX = details.globalPosition.dx;
+                final dragDistance = dragEndX - dragStartX.value;
+                print('Drag ended. Distance: $dragDistance');
 
-                  return _buildPage(page);
-                }),
-              ],
+                // Swipe left (negative distance): go to next page
+                if (dragDistance < -50 && currentPage.value < pages.length - 1) {
+                  print('Going to next page');
+                  _nextPage();
+                }
+                // Swipe right (positive distance): go to previous page
+                else if (dragDistance > 50 && currentPage.value > 0) {
+                  print('Going to previous page');
+                  _previousPage();
+                }
+              },
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ...pages.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final page = entry.value;
+
+                    if (index != currentPage.value) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return _buildPage(page);
+                  }),
+                ],
+              ),
             ),
           ),
 
