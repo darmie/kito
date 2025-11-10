@@ -13,12 +13,10 @@ dependencies:
   meta: ^1.10.0
 
   # Reactive primitives
-  kito_reactive:
-    path: packages/kito_reactive
+  kito_reactive: ^0.1.0
 
   # State machine library
-  kito_fsm:
-    path: packages/kito_fsm
+  kito_fsm: ^0.1.0
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,8 @@
+# Exclude packages directory (separate pub packages)
+packages/
+
+# Exclude demo app (separate Flutter app)
+demo/
+
+# Exclude showcase GIFs (not needed for package)
+showcase/
