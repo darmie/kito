@@ -1,7 +1,7 @@
 name: kito_reactive
 description: Fine-grained reactive primitives for Dart - inspired by SolidJS
 version: 0.1.0
-homepage: https://github.com/yourusername/kito
+repository: https://github.com/darmie/kito
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

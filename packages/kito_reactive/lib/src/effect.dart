@@ -103,15 +103,6 @@ class Batch {
     }
   }
 
-  /// Add an effect to the pending queue
-  static void _queueEffect(void Function() effect) {
-    if (_batching) {
-      _pendingEffects.add(effect);
-    } else {
-      effect();
-    }
-  }
-
   /// Flush all pending effects
   static void _flush() {
     final effects = _pendingEffects.toList();

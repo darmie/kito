@@ -39,7 +39,7 @@ Kito is organized into focused, composable packages:
 
 ### Demo
 
-- **`demo`** - Interactive Flutter web app showcasing all Kito capabilities ([View demos](#-demo))
+- **`demo`** - Interactive Flutter web app showcasing all Kito capabilities ([Live demo](https://darmie.github.io/kito) | [View docs](#-demo))
 
 ## 🚀 Installation
 
