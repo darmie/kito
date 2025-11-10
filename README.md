@@ -506,18 +506,24 @@ FrameTimeline(frameTimings: metrics.frameTimings);
 Kito enables powerful interactive animations with minimal code:
 
 ### Match-3 Game
-```dart
-// Fully playable game with cascades, combos, and win/loss detection
+
+![Match-3 Game](showcase/match-3-ezgif.com-video-to-gif-converter.gif)
+
+Fully playable tile-matching game with cascades, combos, and win/loss detection:
+
 - Tile selection with adjacency validation
 - Invalid move swap-back animations
 - Match detection with combo multipliers
 - Gravity-based tile dropping with stagger
 - Particle effects for matched tiles
-```
 
 ### Card Stack (Tinder-style)
+
+![Card Stack](showcase/tinder-ezgif.com-video-to-gif-converter.gif)
+
+Gesture-driven card swiping with smooth animations:
+
 ```dart
-// Gesture-driven card swiping
 void _onPanUpdate(DragUpdateDetails details) {
   final delta = details.localPosition - dragStart!;
   card.position.value = delta;
@@ -532,24 +538,13 @@ if (card.position.value.dx.abs() > swipeThreshold) {
 }
 ```
 
-### Swipe to Delete
-```dart
-// Progressive visual feedback during swipe
-final swipeProgress = (offset.dx.abs() / threshold).clamp(0.0, 1.0);
-
-// Smooth delete animation
-animate()
-  .to(item.swipeOffset, Offset(targetX, 0))
-  .to(item.opacity, 0.0)
-  .to(item.scale, 0.8)
-  .withDuration(300)
-  .build()
-  .play();
-```
-
 ### Photo Gallery
+
+![Photo Gallery](showcase/gallery-ezgif.com-video-to-gif-converter.gif)
+
+Shared element transitions with expand/collapse animations:
+
 ```dart
-// Shared element transitions
 final expandAnim = animate()
     .to(photo.position, targetPosition)
     .to(photo.size, targetSize)
@@ -562,6 +557,44 @@ final fadeAnims = otherPhotos.map((p) =>
 );
 
 parallel([expandAnim, ...fadeAnims]);
+```
+
+### Onboarding Flow
+
+![Onboarding Flow](showcase/onboarding-ezgif.com-video-to-gif-converter.gif)
+
+Multi-step wizard with directional page transitions and smooth navigation.
+
+### Pull-to-Refresh & List Drag
+
+![Pull-to-Refresh & Drag List](showcase/pull-refresh-list-drag-ezgif.com-video-to-gif-converter.gif)
+
+Gesture-driven interactions with threshold detection and reorderable lists:
+
+- Pull-to-refresh with physics-based spring animations
+- Drag-shuffle list with swap/shift/push modes
+
+### Drag-Shuffle Grid & Swipe to Delete
+
+![Drag-Shuffle & Swipe Delete](showcase/drag-shuffle-swipe-delete-ezgif.com-video-to-gif-converter.gif)
+
+Advanced interactive patterns:
+
+- Drag-shuffle grid with wave/radial/row/column repositioning
+- Swipe-to-delete with progressive visual feedback
+
+```dart
+// Progressive visual feedback during swipe
+final swipeProgress = (offset.dx.abs() / threshold).clamp(0.0, 1.0);
+
+// Smooth delete animation
+animate()
+  .to(item.swipeOffset, Offset(targetX, 0))
+  .to(item.opacity, 0.0)
+  .to(item.scale, 0.8)
+  .withDuration(300)
+  .build()
+  .play();
 ```
 
 ## 🎮 Demo
