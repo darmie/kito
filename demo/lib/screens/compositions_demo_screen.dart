@@ -90,7 +90,7 @@ class CompositionsDemoScreen extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               mainAxisSpacing: spacing,
               crossAxisSpacing: spacing,
-              childAspectRatio: 1.3,
+              childAspectRatio: 0.75, // Adjusted to accommodate taller Match-3 game
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
                 _Match3GameDemo(),
@@ -728,7 +728,7 @@ if (!hadMatches) {
       child: Builder(
         builder: (context) => ReactiveBuilder(
           builder: (_) => Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
