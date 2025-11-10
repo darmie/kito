@@ -227,6 +227,11 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
   late final AnimatableProperty<double> animatedRevenue;
   late final AnimatableProperty<double> animatedPerformance;
 
+  // Animatable properties for metric scale (pulse effect)
+  late final AnimatableProperty<double> usersScale;
+  late final AnimatableProperty<double> revenueScale;
+  late final AnimatableProperty<double> performanceScale;
+
   // Timeline for coordinated animations
   Timeline? timeline;
 
@@ -274,12 +279,29 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
       (start, end, progress) => start + (end - start) * progress,
     );
 
+    // Initialize scale properties for pulse effect
+    usersScale = AnimatableProperty<double>(
+      1.0,
+      (start, end, progress) => start + (end - start) * progress,
+    );
+    revenueScale = AnimatableProperty<double>(
+      1.0,
+      (start, end, progress) => start + (end - start) * progress,
+    );
+    performanceScale = AnimatableProperty<double>(
+      1.0,
+      (start, end, progress) => start + (end - start) * progress,
+    );
+
     // Add effect to trigger rebuilds when animated values change
     effect(() {
       // Access the signals to establish reactive dependencies
       animatedUsers.signal.value;
       animatedRevenue.signal.value;
       animatedPerformance.signal.value;
+      usersScale.signal.value;
+      revenueScale.signal.value;
+      performanceScale.signal.value;
       // Trigger rebuild
       if (mounted) setState(() {});
     });
@@ -381,6 +403,9 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
     animatedUsers.value = 0.0;
     animatedRevenue.value = 0.0;
     animatedPerformance.value = 0.0;
+    usersScale.value = 1.0;
+    revenueScale.value = 1.0;
+    performanceScale.value = 1.0;
 
     // Counter animations - count up to target values
     final usersAnim = animate()
@@ -399,6 +424,50 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
         .to(animatedPerformance, performanceScore.value)
         .withDuration(1500)
         .withEasing(Easing.easeOutExpo)
+        .build();
+
+    // Pulse/scale animations for metric cards - gives a "pop" effect
+    // Each card pulses up to 1.15 then back to 1.0 during counting animation
+    final usersScalePulse = animate()
+        .to(usersScale, 1.15)
+        .withDuration(700)
+        .withEasing(Easing.easeInOutCubic)
+        .build();
+
+    final revenueScalePulse = animate()
+        .to(revenueScale, 1.15)
+        .withDuration(700)
+        .withDelay(100)
+        .withEasing(Easing.easeInOutCubic)
+        .build();
+
+    final performanceScalePulse = animate()
+        .to(performanceScale, 1.15)
+        .withDuration(700)
+        .withDelay(200)
+        .withEasing(Easing.easeInOutCubic)
+        .build();
+
+    // Animate back to 1.0 after pulse
+    final usersScaleBack = animate()
+        .to(usersScale, 1.0)
+        .withDuration(700)
+        .withDelay(700)
+        .withEasing(Easing.easeInOutCubic)
+        .build();
+
+    final revenueScaleBack = animate()
+        .to(revenueScale, 1.0)
+        .withDuration(700)
+        .withDelay(800)
+        .withEasing(Easing.easeInOutCubic)
+        .build();
+
+    final performanceScaleBack = animate()
+        .to(performanceScale, 1.0)
+        .withDuration(700)
+        .withDelay(900)
+        .withEasing(Easing.easeInOutCubic)
         .build();
 
     // Line chart animation (draws path)
@@ -431,6 +500,14 @@ class _AdvancedDashboardDemoState extends State<_AdvancedDashboardDemo> {
     timeline!.add(usersAnim);
     timeline!.add(revenueAnim, position: TimelinePosition.concurrent);
     timeline!.add(performanceAnim, position: TimelinePosition.concurrent);
+
+    // Add pulse animations for visual emphasis during counting
+    timeline!.add(usersScalePulse, position: TimelinePosition.concurrent);
+    timeline!.add(usersScaleBack, position: TimelinePosition.concurrent);
+    timeline!.add(revenueScalePulse, position: TimelinePosition.concurrent);
+    timeline!.add(revenueScaleBack, position: TimelinePosition.concurrent);
+    timeline!.add(performanceScalePulse, position: TimelinePosition.concurrent);
+    timeline!.add(performanceScaleBack, position: TimelinePosition.concurrent);
 
     // Add chart animations
     timeline!.add(lineAnim, position: TimelinePosition.concurrent);
@@ -591,6 +668,7 @@ ReactiveBuilder(
                           value: _formatNumber(animatedUsers.value.toInt()),
                           icon: Icons.people,
                           color: const Color(0xFF3498DB),
+                          scale: usersScale.value,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -600,6 +678,7 @@ ReactiveBuilder(
                           value: '\$${_formatNumber(animatedRevenue.value.toInt())}',
                           icon: Icons.attach_money,
                           color: const Color(0xFF2ECC71),
+                          scale: revenueScale.value,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -609,6 +688,7 @@ ReactiveBuilder(
                           value: '${animatedPerformance.value.toStringAsFixed(1)}%',
                           icon: Icons.trending_up,
                           color: const Color(0xFFE74C3C),
+                          scale: performanceScale.value,
                         ),
                       ),
                     ],
@@ -733,12 +813,14 @@ class _MetricCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final double scale;
 
   const _MetricCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    this.scale = 1.0,
   });
 
   @override
@@ -771,12 +853,15 @@ class _MetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+          Transform.scale(
+            scale: scale,
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+            ),
           ),
         ],
       ),

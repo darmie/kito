@@ -287,10 +287,17 @@ class _HeatMapDemoState extends State<HeatMapDemo> {
 
     _currentTime++;
 
-    // Animate scroll offset
+    // Animate scroll offset with wrapping to prevent infinite scroll
+    // Calculate the chart width in pixels (approximate based on xStep)
+    final chartWidth = 400.0; // Approximate chart width
+    final xStep = chartWidth / (maxDataPoints - 1);
+    final scrollIncrement = xStep;
+
     final currentOffset = scrollProps.rotation.value;
+    final targetOffset = (currentOffset + scrollIncrement) % (chartWidth * 2);
+
     animate()
-        .to(scrollProps.rotation, currentOffset + 2.0)
+        .to(scrollProps.rotation, targetOffset)
         .withDuration(updateInterval.toInt())
         .withEasing(Easing.linear)
         .build()
