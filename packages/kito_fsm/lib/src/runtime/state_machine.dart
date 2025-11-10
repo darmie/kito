@@ -359,8 +359,7 @@ abstract class KitoStateMachine<S extends Enum, E extends Enum, C> {
     // Check if new state is transient
     _checkTransientState();
 
-    _logDebug('Transitioned: ${from.name} → ${newLeaf.name}' +
-        (event != null ? ' (${event.name})' : ''));
+    _logDebug('Transitioned: ${from.name} → ${newLeaf.name}${event != null ? ' (${event.name})' : ''}');
   }
 
   /// Find the index of the common ancestor between two state paths
@@ -386,7 +385,6 @@ abstract class KitoStateMachine<S extends Enum, E extends Enum, C> {
   void _checkTransientState() {
     _transientTimer?.cancel();
 
-    final current = currentState.peek();
     final stateConfig = _getStateConfig(_statePath.length - 1); // Get leaf config
 
     if (stateConfig == null || !stateConfig.isTransient) {
