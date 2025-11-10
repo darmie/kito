@@ -786,4 +786,4 @@ Contributions are welcome! Please feel free to submit a PR with new patterns or 
 
 ## License
 
-MIT
+BSD 3-Clause License - see [LICENSE](LICENSE) for details.
