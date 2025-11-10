@@ -14,26 +14,29 @@ class InteractiveDemoScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Interactive Patterns'),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
-          final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
-          final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+            final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+            final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
 
-          return GridView.count(
-            padding: EdgeInsets.all(padding),
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: spacing,
-            crossAxisSpacing: spacing,
-            childAspectRatio: 1.2,
-            children: const [
-              _PullToRefreshDemo(),
-              _DragShuffleListDemo(),
-              _DragShuffleGridDemo(),
-              _SwipeToDeleteDemo(),
-            ],
-          );
-        },
+            return GridView.count(
+              padding: EdgeInsets.all(padding),
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              childAspectRatio: 1.2,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                _PullToRefreshDemo(),
+                _DragShuffleListDemo(),
+                _DragShuffleGridDemo(),
+                _SwipeToDeleteDemo(),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

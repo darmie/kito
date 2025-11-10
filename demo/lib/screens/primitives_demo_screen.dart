@@ -32,30 +32,33 @@ class _MotionPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
-        final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
-        final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+          final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+          final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
 
-        return GridView.count(
-          padding: EdgeInsets.all(padding),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: spacing,
-          crossAxisSpacing: spacing,
-          childAspectRatio: 1.2,
-          children: const [
-            _ElasticDemo(),
-            _BounceDemo(),
-            _ShakeDemo(),
-            _PulseDemo(),
-            _FlashDemo(),
-            _SwingDemo(),
-            _JelloDemo(),
-            _HeartbeatDemo(),
-          ],
-        );
-      },
+          return GridView.count(
+            padding: EdgeInsets.all(padding),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: 1.2,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [
+              _ElasticDemo(),
+              _BounceDemo(),
+              _ShakeDemo(),
+              _PulseDemo(),
+              _FlashDemo(),
+              _SwingDemo(),
+              _JelloDemo(),
+              _HeartbeatDemo(),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -541,30 +544,33 @@ class _EnterExitPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
-        final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
-        final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+          final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+          final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
 
-        return GridView.count(
-          padding: EdgeInsets.all(padding),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: spacing,
-          crossAxisSpacing: spacing,
-          childAspectRatio: 1.2,
-          children: const [
-            _FadeInDemo(),
-            _SlideInDemo(),
-            _ScaleInDemo(),
-            _ZoomInDemo(),
-            _FlipInDemo(),
-            _RotateInDemo(),
-            _SlideFadeDemo(),
-            _FadeScaleDemo(),
-          ],
-        );
-      },
+          return GridView.count(
+            padding: EdgeInsets.all(padding),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: 1.2,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [
+              _FadeInDemo(),
+              _SlideInDemo(),
+              _ScaleInDemo(),
+              _ZoomInDemo(),
+              _FlipInDemo(),
+              _RotateInDemo(),
+              _SlideFadeDemo(),
+              _FadeScaleDemo(),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -1084,28 +1090,31 @@ class _TimingPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
-        final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
-        final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+          final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+          final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
 
-        return GridView.count(
-          padding: EdgeInsets.all(padding),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: spacing,
-          crossAxisSpacing: spacing,
-          childAspectRatio: 1.2,
-          children: const [
-            _ChainDemo(),
-            _ParallelDemo(),
-            _SpringDemo(),
-            _PingPongDemo(),
-            _YoyoDemo(),
-            _StaggerDemo(),
-          ],
-        );
-      },
+          return GridView.count(
+            padding: EdgeInsets.all(padding),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: 1.2,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [
+              _ChainDemo(),
+              _ParallelDemo(),
+              _SpringDemo(),
+              _PingPongDemo(),
+              _YoyoDemo(),
+              _StaggerDemo(),
+            ],
+          );
+        },
+      ),
     );
   }
 }
