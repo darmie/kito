@@ -1,4 +1,4 @@
-![Kito Logo](kito-logo.png)
+![Kito Logo](https://raw.githubusercontent.com/darmie/kito/main/kito-logo.png)
 # Kito 🎬
 
 **Declarative state machines & reactive animations for Dart/Flutter**
@@ -507,7 +507,7 @@ Kito enables powerful interactive animations with minimal code:
 
 ### Match-3 Game
 
-![Match-3 Game](showcase/match-3-ezgif.com-video-to-gif-converter.gif)
+![Match-3 Game](https://raw.githubusercontent.com/darmie/kito/main/showcase/match-3-ezgif.com-video-to-gif-converter.gif)
 
 Fully playable tile-matching game with cascades, combos, and win/loss detection:
 
@@ -519,7 +519,7 @@ Fully playable tile-matching game with cascades, combos, and win/loss detection:
 
 ### Card Stack (Tinder-style)
 
-![Card Stack](showcase/tinder-ezgif.com-video-to-gif-converter.gif)
+![Card Stack](https://raw.githubusercontent.com/darmie/kito/main/showcase/tinder-ezgif.com-video-to-gif-converter.gif)
 
 Gesture-driven card swiping with smooth animations:
 
@@ -540,7 +540,7 @@ if (card.position.value.dx.abs() > swipeThreshold) {
 
 ### Photo Gallery
 
-![Photo Gallery](showcase/gallery-ezgif.com-video-to-gif-converter.gif)
+![Photo Gallery](https://raw.githubusercontent.com/darmie/kito/main/showcase/gallery-ezgif.com-video-to-gif-converter.gif)
 
 Shared element transitions with expand/collapse animations:
 
@@ -561,13 +561,13 @@ parallel([expandAnim, ...fadeAnims]);
 
 ### Onboarding Flow
 
-![Onboarding Flow](showcase/onboarding-ezgif.com-video-to-gif-converter.gif)
+![Onboarding Flow](https://raw.githubusercontent.com/darmie/kito/main/showcase/onboarding-ezgif.com-video-to-gif-converter.gif)
 
 Multi-step wizard with directional page transitions and smooth navigation.
 
 ### Pull-to-Refresh & List Drag
 
-![Pull-to-Refresh & Drag List](showcase/pull-refresh-list-drag-ezgif.com-video-to-gif-converter.gif)
+![Pull-to-Refresh & Drag List](https://raw.githubusercontent.com/darmie/kito/main/showcase/pull-refresh-list-drag-ezgif.com-video-to-gif-converter.gif)
 
 Gesture-driven interactions with threshold detection and reorderable lists:
 
@@ -576,7 +576,7 @@ Gesture-driven interactions with threshold detection and reorderable lists:
 
 ### Drag-Shuffle Grid & Swipe to Delete
 
-![Drag-Shuffle & Swipe Delete](showcase/drag-shuffle-swipe-delete-ezgif.com-video-to-gif-converter.gif)
+![Drag-Shuffle & Swipe Delete](https://raw.githubusercontent.com/darmie/kito/main/showcase/drag-shuffle-swipe-delete-ezgif.com-video-to-gif-converter.gif)
 
 Advanced interactive patterns:
 

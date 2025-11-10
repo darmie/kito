@@ -1,3 +1,7 @@
+## 0.1.1
+
+* Fix: Use absolute GitHub URLs for logo and showcase GIFs in README for proper display on pub.dev
+
 ## 0.1.0
 
 * Initial release

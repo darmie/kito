@@ -1,6 +1,6 @@
 name: kito
 description: A powerful, fine-grained reactive animation library for Flutter inspired by anime.js
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/darmie/kito
 
 environment:
