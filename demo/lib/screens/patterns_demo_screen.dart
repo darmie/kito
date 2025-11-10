@@ -13,19 +13,27 @@ class PatternsDemoScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('UI FSM Patterns'),
       ),
-      body: GridView.count(
-        padding: const EdgeInsets.all(24),
-        crossAxisCount: 2,
-        mainAxisSpacing: 24,
-        crossAxisSpacing: 24,
-        childAspectRatio: 1.2,
-        children: const [
-          _ButtonPatternDemo(),
-          _FormPatternDemo(),
-          _DrawerPatternDemo(),
-          _ModalPatternDemo(),
-          _ToastPatternDemo(),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+          final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+          final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+
+          return GridView.count(
+            padding: EdgeInsets.all(padding),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: 1.2,
+            children: const [
+              _ButtonPatternDemo(),
+              _FormPatternDemo(),
+              _DrawerPatternDemo(),
+              _ModalPatternDemo(),
+              _ToastPatternDemo(),
+            ],
+          );
+        },
       ),
     );
   }

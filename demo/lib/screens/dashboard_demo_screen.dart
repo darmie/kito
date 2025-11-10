@@ -660,38 +660,76 @@ ReactiveBuilder(
               if (hasData)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _MetricCard(
-                          title: 'Total Users',
-                          value: _formatNumber(animatedUsers.value.toInt()),
-                          icon: Icons.people,
-                          color: const Color(0xFF3498DB),
-                          scale: usersScale.value,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _MetricCard(
-                          title: 'Revenue',
-                          value: '\$${_formatNumber(animatedRevenue.value.toInt())}',
-                          icon: Icons.attach_money,
-                          color: const Color(0xFF2ECC71),
-                          scale: revenueScale.value,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _MetricCard(
-                          title: 'Performance',
-                          value: '${animatedPerformance.value.toStringAsFixed(1)}%',
-                          icon: Icons.trending_up,
-                          color: const Color(0xFFE74C3C),
-                          scale: performanceScale.value,
-                        ),
-                      ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 600;
+
+                      if (isMobile) {
+                        // Stack vertically on mobile
+                        return Column(
+                          children: [
+                            _MetricCard(
+                              title: 'Total Users',
+                              value: _formatNumber(animatedUsers.value.toInt()),
+                              icon: Icons.people,
+                              color: const Color(0xFF3498DB),
+                              scale: usersScale.value,
+                            ),
+                            const SizedBox(height: 12),
+                            _MetricCard(
+                              title: 'Revenue',
+                              value: '\$${_formatNumber(animatedRevenue.value.toInt())}',
+                              icon: Icons.attach_money,
+                              color: const Color(0xFF2ECC71),
+                              scale: revenueScale.value,
+                            ),
+                            const SizedBox(height: 12),
+                            _MetricCard(
+                              title: 'Performance',
+                              value: '${animatedPerformance.value.toStringAsFixed(1)}%',
+                              icon: Icons.trending_up,
+                              color: const Color(0xFFE74C3C),
+                              scale: performanceScale.value,
+                            ),
+                          ],
+                        );
+                      }
+
+                      // Row layout for desktop
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Total Users',
+                              value: _formatNumber(animatedUsers.value.toInt()),
+                              icon: Icons.people,
+                              color: const Color(0xFF3498DB),
+                              scale: usersScale.value,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Revenue',
+                              value: '\$${_formatNumber(animatedRevenue.value.toInt())}',
+                              icon: Icons.attach_money,
+                              color: const Color(0xFF2ECC71),
+                              scale: revenueScale.value,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _MetricCard(
+                              title: 'Performance',
+                              value: '${animatedPerformance.value.toStringAsFixed(1)}%',
+                              icon: Icons.trending_up,
+                              color: const Color(0xFFE74C3C),
+                              scale: performanceScale.value,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
 
@@ -715,61 +753,126 @@ ReactiveBuilder(
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Revenue Line Chart
-                        Expanded(
-                          flex: 2,
-                          child: _ChartCard(
-                            title: 'Revenue Trend',
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: KitoCanvas(
-                                painter: LineChartPainter(
-                                  lineChartProps,
-                                  revenueData.value,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMobile = constraints.maxWidth < 600;
 
-                        // User Growth Bar Chart
-                        Expanded(
-                          flex: 2,
-                          child: _ChartCard(
-                            title: 'User Growth',
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: KitoCanvas(
-                                painter: BarChartPainter(
-                                  barChartProps,
-                                  userGrowthData.value,
+                        if (isMobile) {
+                          // Stack charts vertically on mobile
+                          return SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  height: 250,
+                                  child: _ChartCard(
+                                    title: 'Revenue Trend',
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: KitoCanvas(
+                                        painter: LineChartPainter(
+                                          lineChartProps,
+                                          revenueData.value,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  height: 250,
+                                  child: _ChartCard(
+                                    title: 'User Growth',
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: KitoCanvas(
+                                        painter: BarChartPainter(
+                                          barChartProps,
+                                          userGrowthData.value,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  height: 250,
+                                  child: _ChartCard(
+                                    title: 'Score',
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: KitoCanvas(
+                                        painter: GaugePainter(
+                                          gaugeProps,
+                                          performanceScore.value,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
+                          );
+                        }
 
-                        // Performance Gauge
-                        Expanded(
-                          child: _ChartCard(
-                            title: 'Score',
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: KitoCanvas(
-                                painter: GaugePainter(
-                                  gaugeProps,
-                                  performanceScore.value,
+                        // Row layout for desktop
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Revenue Line Chart
+                            Expanded(
+                              flex: 2,
+                              child: _ChartCard(
+                                title: 'Revenue Trend',
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: KitoCanvas(
+                                    painter: LineChartPainter(
+                                      lineChartProps,
+                                      revenueData.value,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                      ],
+                            const SizedBox(width: 16),
+
+                            // User Growth Bar Chart
+                            Expanded(
+                              flex: 2,
+                              child: _ChartCard(
+                                title: 'User Growth',
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: KitoCanvas(
+                                    painter: BarChartPainter(
+                                      barChartProps,
+                                      userGrowthData.value,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Performance Gauge
+                            Expanded(
+                              child: _ChartCard(
+                                title: 'Score',
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: KitoCanvas(
+                                    painter: GaugePainter(
+                                      gaugeProps,
+                                      performanceScore.value,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

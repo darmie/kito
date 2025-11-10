@@ -32,22 +32,30 @@ class _MotionPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      padding: const EdgeInsets.all(24),
-      crossAxisCount: 3,
-      mainAxisSpacing: 24,
-      crossAxisSpacing: 24,
-      childAspectRatio: 1.2,
-      children: const [
-        _ElasticDemo(),
-        _BounceDemo(),
-        _ShakeDemo(),
-        _PulseDemo(),
-        _FlashDemo(),
-        _SwingDemo(),
-        _JelloDemo(),
-        _HeartbeatDemo(),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+        final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+        final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+
+        return GridView.count(
+          padding: EdgeInsets.all(padding),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
+          childAspectRatio: 1.2,
+          children: const [
+            _ElasticDemo(),
+            _BounceDemo(),
+            _ShakeDemo(),
+            _PulseDemo(),
+            _FlashDemo(),
+            _SwingDemo(),
+            _JelloDemo(),
+            _HeartbeatDemo(),
+          ],
+        );
+      },
     );
   }
 }
@@ -533,22 +541,30 @@ class _EnterExitPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      padding: const EdgeInsets.all(24),
-      crossAxisCount: 3,
-      mainAxisSpacing: 24,
-      crossAxisSpacing: 24,
-      childAspectRatio: 1.2,
-      children: const [
-        _FadeInDemo(),
-        _SlideInDemo(),
-        _ScaleInDemo(),
-        _ZoomInDemo(),
-        _FlipInDemo(),
-        _RotateInDemo(),
-        _SlideFadeDemo(),
-        _FadeScaleDemo(),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+        final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+        final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+
+        return GridView.count(
+          padding: EdgeInsets.all(padding),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
+          childAspectRatio: 1.2,
+          children: const [
+            _FadeInDemo(),
+            _SlideInDemo(),
+            _ScaleInDemo(),
+            _ZoomInDemo(),
+            _FlipInDemo(),
+            _RotateInDemo(),
+            _SlideFadeDemo(),
+            _FadeScaleDemo(),
+          ],
+        );
+      },
     );
   }
 }
@@ -1068,20 +1084,28 @@ class _TimingPrimitivesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      padding: const EdgeInsets.all(24),
-      crossAxisCount: 3,
-      mainAxisSpacing: 24,
-      crossAxisSpacing: 24,
-      childAspectRatio: 1.2,
-      children: const [
-        _ChainDemo(),
-        _ParallelDemo(),
-        _SpringDemo(),
-        _PingPongDemo(),
-        _YoyoDemo(),
-        _StaggerDemo(),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+        final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+        final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+
+        return GridView.count(
+          padding: EdgeInsets.all(padding),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
+          childAspectRatio: 1.2,
+          children: const [
+            _ChainDemo(),
+            _ParallelDemo(),
+            _SpringDemo(),
+            _PingPongDemo(),
+            _YoyoDemo(),
+            _StaggerDemo(),
+          ],
+        );
+      },
     );
   }
 }

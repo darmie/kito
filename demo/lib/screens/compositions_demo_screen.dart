@@ -14,18 +14,26 @@ class CompositionsDemoScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Complex Compositions'),
       ),
-      body: GridView.count(
-        padding: const EdgeInsets.all(24),
-        crossAxisCount: 2,
-        mainAxisSpacing: 24,
-        crossAxisSpacing: 24,
-        childAspectRatio: 1.3,
-        children: const [
-          _Match3GameDemo(),
-          _CardStackDemo(),
-          _PhotoGalleryDemo(),
-          _OnboardingFlowDemo(),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth < 600 ? 1 : (constraints.maxWidth < 900 ? 2 : 3);
+          final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+          final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+
+          return GridView.count(
+            padding: EdgeInsets.all(padding),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: 1.3,
+            children: const [
+              _Match3GameDemo(),
+              _CardStackDemo(),
+              _PhotoGalleryDemo(),
+              _OnboardingFlowDemo(),
+            ],
+          );
+        },
       ),
     );
   }

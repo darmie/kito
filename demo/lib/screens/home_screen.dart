@@ -16,35 +16,47 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             // Header
-            Padding(
-              padding: const EdgeInsets.all(48.0),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.animation,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Kito Interaction Framework',
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+                return Padding(
+                  padding: EdgeInsets.all(isMobile ? 24.0 : 48.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.animation,
+                        size: isMobile ? 60 : 80,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      SizedBox(height: isMobile ? 16 : 24),
+                      Text(
+                        'Kito Interaction Framework',
+                        style: (isMobile
+                                ? Theme.of(context).textTheme.headlineLarge
+                                : Theme.of(context).textTheme.displayLarge)
+                            ?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Declarative state machines & reactive animations for Flutter',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isMobile ? 12 : 16),
+                      Text(
+                        'Declarative state machines & reactive animations for Flutter',
+                        style: (isMobile
+                                ? Theme.of(context).textTheme.titleMedium
+                                : Theme.of(context).textTheme.titleLarge)
+                            ?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
                               .withOpacity(0.6),
                         ),
-                    textAlign: TextAlign.center,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
 
             // Demo categories
@@ -52,14 +64,20 @@ class HomeScreen extends StatelessWidget {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1200),
-                  child: GridView.count(
-                    padding: const EdgeInsets.all(24),
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 24,
-                    crossAxisSpacing: 24,
-                    childAspectRatio: 1.5,
-                    shrinkWrap: true,
-                    children: [
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossAxisCount = constraints.maxWidth < 600 ? 1 : 2;
+                      final padding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+                      final spacing = constraints.maxWidth < 600 ? 16.0 : 24.0;
+
+                      return GridView.count(
+                        padding: EdgeInsets.all(padding),
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: spacing,
+                        crossAxisSpacing: spacing,
+                        childAspectRatio: 1.5,
+                        shrinkWrap: true,
+                        children: [
                       _DemoCard(
                         title: 'Atomic Primitives',
                         description:
@@ -123,6 +141,8 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ],
+                      );
+                    },
                   ),
                 ),
               ),
