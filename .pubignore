@@ -6,3 +6,6 @@ demo/
 
 # Exclude showcase GIFs (not needed for package)
 showcase/
+
+# Exclude build artifacts
+build/
